@@ -1,38 +1,26 @@
-import { NextResponse } from "next/server";
-import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
+import { NextResponse, NextRequest } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
 export async function POST() {
+  const supabase = await createServerSupabase();
+  await supabase.auth.signOut({ scope: "global" }).catch(() => {});
+
+  // limpieza extra por si quedara algo
   const store = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return store.get(name)?.value;
-        },
-        getAll() {
-          return store.getAll().map((c) => ({ name: c.name, value: c.value }));
-        },
-        set(name: string, value: string, options?: any) {
-          (store as any).set(name, value, options);
-        },
-        remove(name: string, options?: any) {
-          if (typeof (store as any).delete === "function") {
-            (store as any).delete(name);
-          } else {
-            (store as any).set(name, "", { ...options, maxAge: 0 });
-          }
-        },
-      } as CookieMethodsServer,
+  store.getAll().forEach((c) => {
+    if (c.name.startsWith("sb-") || c.name.includes("supabase")) {
+      (store as any).set(c.name, "", { path: "/", maxAge: 0 });
     }
-  );
+  });
 
-  const { error } = await supabase.auth.signOut();
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
 
-  return NextResponse.json({ success: true });
+export async function GET(req: NextRequest) {
+  const supabase = await createServerSupabase();
+  await supabase.auth.signOut({ scope: "global" }).catch(() => {});
+  const store = await cookies();
+  store.getAll().forEach((c) => (store as any).set(c.name, "", { path: "/", maxAge: 0 }));
+  return NextResponse.redirect(new URL("/", req.url));
 }
