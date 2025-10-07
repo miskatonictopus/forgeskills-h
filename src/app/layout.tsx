@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 // 🩶 Sans & Mono (de Google)
 const geistSans = Geist({
@@ -30,15 +31,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
-      <body
-        className={`
-          ${geistSans.variable} 
-          ${geistMono.variable} 
-          ${notoSerifJP.variable}
-          antialiased bg-black text-white
-        `}
-      >
+    <html lang="es" className="dark">
+  <body
+    className={cn(
+      "min-h-screen bg-background text-foreground antialiased",
+      geistSans.variable,
+      geistMono.variable,
+      notoSerifJP.variable
+    )}
+  >
+
         {children}
       </body>
     </html>
