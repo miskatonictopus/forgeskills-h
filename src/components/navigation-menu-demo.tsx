@@ -58,7 +58,7 @@ export function NavigationMenuDemo() {
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger>Home</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-3">
                 <NavigationMenuLink asChild>
@@ -88,7 +88,7 @@ export function NavigationMenuDemo() {
 
         <NavigationMenuItem>
           <NavigationMenuTrigger>Components</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {components.map((component) => (
                 <ListItem key={component.title} title={component.title} href={component.href}>
@@ -107,7 +107,7 @@ export function NavigationMenuDemo() {
 
         <NavigationMenuItem>
           <NavigationMenuTrigger>List</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[300px] gap-4">
               <li>
                 <NavigationMenuLink asChild>
@@ -135,7 +135,7 @@ export function NavigationMenuDemo() {
 
         <NavigationMenuItem>
           <NavigationMenuTrigger>Simple</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[200px] gap-4">
               <li>
                 <NavigationMenuLink asChild>
@@ -154,7 +154,7 @@ export function NavigationMenuDemo() {
 
         <NavigationMenuItem>
           <NavigationMenuTrigger>With Icon</NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[200px] gap-4">
               <li>
                 <NavigationMenuLink asChild>

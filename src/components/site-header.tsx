@@ -26,7 +26,7 @@ export function SiteHeader({ className }: { className?: string }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-white/10 bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50",
+        "sticky top-0 z-50 w-full border-b border-white/10 bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50 pt-2 pb-2",
         className
       )}
     >
@@ -50,10 +50,10 @@ export function SiteHeader({ className }: { className?: string }) {
 
           {/* BOTONES */}
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="text-zinc-200">
+            <Button asChild variant="ghost" className="text-zinc-200 text-xs">
               <Link href="/login">Iniciar sesión</Link>
             </Button>
-            <Button asChild className="bg-white text-black hover:bg-white/90">
+            <Button asChild className="bg-white text-black hover:bg-white/90 text-xs">
               <Link href="/register">Registrarse</Link>
             </Button>
           </div>
