@@ -3,16 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
-} from "@/components/ui/navigation-menu"
+
 
 export default function LandingPage() {
   return (
@@ -33,7 +24,7 @@ export default function LandingPage() {
 
         <p className="font-claude mb-10 max-w-3xl text-2xl leading-relaxed text-gray-300">
           Asistente docente híbrido que aprende tu forma de enseñar, automatiza la rutina
-          y amplía tu capacidad para centrarte en lo que importa:
+          y amplía tu capacidad para centrarte lo que importa:
           <span className="italic font-bold"> tus alumnos</span>.
         </p>
 
