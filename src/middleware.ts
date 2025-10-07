@@ -1,60 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+// src/middleware.ts
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-// Rutas a proteger / y rutas de auth públicas
-const isProtected = (pathname: string) =>
-  pathname.startsWith("/dashboard");
-
-const isAuthPage = (pathname: string) =>
-  pathname === "/login" || pathname === "/register";
-
-export async function middleware(req: NextRequest) {
-  // Siempre creamos una respuesta base donde el SDK escribirá cookies
-  const res = NextResponse.next();
-
-  // Cliente Supabase para middleware usando getAll/setAll
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll().map((c) => ({ name: c.name, value: c.value }));
-        },
-        setAll(cookies) {
-          cookies.forEach(({ name, value, options }) => {
-            res.cookies.set({ name, value, ...options });
-          });
-        },
-      },
-    }
-  );
-
-  const { data } = await supabase.auth.getUser();
-  const { pathname } = req.nextUrl;
-
-  // 1) Sin sesión intentando entrar a una ruta protegida
-  if (isProtected(pathname) && !data.user) {
-    const redirectUrl = new URL("/login", req.url);
-    const redirectRes = NextResponse.redirect(redirectUrl);
-    // copia cookies que el SDK haya escrito en `res`
-    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
-    return redirectRes;
-  }
-
-  // 2) Con sesión entrando a /login o /register
-  if (isAuthPage(pathname) && data.user) {
-    const redirectUrl = new URL("/dashboard", req.url);
-    const redirectRes = NextResponse.redirect(redirectUrl);
-    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
-    return redirectRes;
-  }
-
-  // 3) Deja pasar
-  return res;
-}
-
-// Aplica solo donde interesa (y evita estáticos)
+// ⚠️ Ajusta las rutas públicas y las que quieres proteger
+// Este matcher EXCLUYE estáticos, API, auth y login/signup.
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: [
+    // Todo menos assets, API, login/signup y estáticos comunes
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/|login|signup|public/).*)",
+  ],
 };
+
+export default function middleware(req: NextRequest) {
+  try {
+    const { pathname } = req.nextUrl;
+
+    // ✅ Ejemplo de protección básica de /dashboard
+    // (Si tienes tu propio check de sesión, colócalo aquí)
+    // const hasSession = Boolean(req.cookies.get("fs_session")?.value);
+    // if (pathname.startsWith("/dashboard") && !hasSession) {
+    //   const url = req.nextUrl.clone();
+    //   url.pathname = "/login";
+    //   url.searchParams.set("next", pathname);
+    //   return NextResponse.redirect(url);
+    // }
+
+    return NextResponse.next();
+  } catch (err) {
+    // Fail-soft: nunca caigas en 500; deja pasar la petición
+    // Puedes loguear en Vercel Logs con console.error
+    console.error("Middleware error:", err);
+    return NextResponse.next();
+  }
+}
