@@ -13,7 +13,8 @@ export const config = {
 
 export default function middleware(req: NextRequest) {
   try {
-    const { pathname } = req.nextUrl;
+  
+    
 
     // ✅ Ejemplo de protección vasica de /dashboard
     // (Si tienes tu propio check de sesión, colócalo aquí)

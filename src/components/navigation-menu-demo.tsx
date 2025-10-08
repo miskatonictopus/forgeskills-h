@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CircleCheckIcon, CircleHelpIcon, CircleIcon } from "lucide-react";
+import {
+  CircleCheckIcon,
+  CircleHelpIcon,
+  CircleIcon,
+  Moon,
+  Sun,
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { Switch } from "@/components/ui/switch";
 
 import {
   NavigationMenu,
@@ -53,20 +61,30 @@ const components: { title: string; href: string; description: string }[] = [
 ];
 
 export function NavigationMenuDemo() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
+
+  // Igual que en el layout protegido: activado = dark
+  const isDark = mounted ? resolvedTheme === "dark" : false;
+
   return (
     <NavigationMenu>
-      <NavigationMenuList>
+      <NavigationMenuList className="items-center gap-4">
         <NavigationMenuItem>
           <NavigationMenuTrigger>Home</NavigationMenuTrigger>
           <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-3">
                 <NavigationMenuLink asChild>
-                <Link
+                  <Link
                     className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
                     href="/"
                   >
-                    <div className="mt-4 mb-2 text-lg font-medium">shadcn/ui</div>
+                    <div className="mt-4 mb-2 text-lg font-medium">
+                      shadcn/ui
+                    </div>
                     <p className="text-sm leading-tight text-muted-foreground">
                       Beautifully designed components built with Tailwind CSS.
                     </p>
@@ -91,7 +109,11 @@ export function NavigationMenuDemo() {
           <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {components.map((component) => (
-                <ListItem key={component.title} title={component.title} href={component.href}>
+                <ListItem
+                  key={component.title}
+                  title={component.title}
+                  href={component.href}
+                >
                   {component.description}
                 </ListItem>
               ))}
@@ -113,39 +135,26 @@ export function NavigationMenuDemo() {
                 <NavigationMenuLink asChild>
                   <Link href="#">
                     <div className="font-medium">Components</div>
-                    <div className="text-muted-foreground">Browse all components in the library.</div>
+                    <div className="text-muted-foreground">
+                      Browse all components in the library.
+                    </div>
                   </Link>
                 </NavigationMenuLink>
                 <NavigationMenuLink asChild>
                   <Link href="#">
                     <div className="font-medium">Documentation</div>
-                    <div className="text-muted-foreground">Learn how to use the library.</div>
+                    <div className="text-muted-foreground">
+                      Learn how to use the library.
+                    </div>
                   </Link>
                 </NavigationMenuLink>
                 <NavigationMenuLink asChild>
                   <Link href="#">
                     <div className="font-medium">Blog</div>
-                    <div className="text-muted-foreground">Read our latest blog posts.</div>
+                    <div className="text-muted-foreground">
+                      Read our latest blog posts.
+                    </div>
                   </Link>
-                </NavigationMenuLink>
-              </li>
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-
-        <NavigationMenuItem>
-          <NavigationMenuTrigger>Simple</NavigationMenuTrigger>
-          <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
-            <ul className="grid w-[200px] gap-4">
-              <li>
-                <NavigationMenuLink asChild>
-                  <Link href="#">Components</Link>
-                </NavigationMenuLink>
-                <NavigationMenuLink asChild>
-                  <Link href="#">Documentation</Link>
-                </NavigationMenuLink>
-                <NavigationMenuLink asChild>
-                  <Link href="#">Blocks</Link>
                 </NavigationMenuLink>
               </li>
             </ul>
@@ -176,6 +185,20 @@ export function NavigationMenuDemo() {
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
+
+        {/* 🌙☀️ Switch igual que en el layout protegido */}
+        <NavigationMenuItem>
+          <div className="flex items-center gap-2 pl-4">
+            <Sun className="h-4 w-4 text-muted-foreground" />
+            <Switch
+              checked={isDark}
+              onCheckedChange={(checked) =>
+                setTheme(checked ? "dark" : "light")
+              }
+            />
+            <Moon className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );
@@ -192,7 +215,9 @@ function ListItem({
       <NavigationMenuLink asChild>
         <Link href={href}>
           <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="text-sm leading-snug text-muted-foreground line-clamp-2">{children}</p>
+          <p className="text-sm leading-snug text-muted-foreground line-clamp-2">
+            {children}
+          </p>
         </Link>
       </NavigationMenuLink>
     </li>

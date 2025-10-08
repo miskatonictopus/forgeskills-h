@@ -36,7 +36,8 @@ export default async function ProtectedLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        {/* HEADER */}
+        <header className="relative z-50 flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -65,7 +66,18 @@ export default async function ProtectedLayout({
           </div>
         </header>
 
+        {/* CONTENIDO PRINCIPAL */}
         <main className="flex flex-1 flex-col gap-4 p-4">{children}</main>
+
+        {/* FOOTER con usuario */}
+        <footer className="border-t px-4 py-2 text-sm text-muted-foreground flex justify-between items-center">
+          <span>
+            Usuario: <b>{data.user.email}</b>
+          </span>
+          <span className="text-xs text-muted-foreground/70">
+            ForgeSkills © {new Date().getFullYear()}
+          </span>
+        </footer>
       </SidebarInset>
     </SidebarProvider>
   );
