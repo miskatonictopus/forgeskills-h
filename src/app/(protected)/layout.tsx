@@ -19,6 +19,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { LogoutButton } from "./dashboard/LogoutButton";
+
 export default async function ProtectedLayout({
   children,
 }: {
@@ -50,12 +53,19 @@ export default async function ProtectedLayout({
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+
+          {/* derecha: switch + separador + logout */}
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeSwitch />
+            <Separator
+              orientation="vertical"
+              className="h-6 data-[orientation=vertical]:h-6 mx-2"
+            />
+            <LogoutButton />
+          </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 p-4">
-          {/* Aquí se renderiza el contenido de cada página protegida */}
-          {children}
-        </main>
+        <main className="flex flex-1 flex-col gap-4 p-4">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

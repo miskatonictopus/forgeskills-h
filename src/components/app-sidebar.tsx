@@ -1,6 +1,6 @@
 import * as React from "react"
-import { GalleryVerticalEnd, Minus, Plus } from "lucide-react"
-
+import { Minus, Plus } from "lucide-react"
+import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form"
 import {
   Collapsible,
@@ -170,13 +170,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="#">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <GalleryVerticalEnd className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Documentation</span>
-                  <span className="">v1.0.0</span>
-                </div>
+                <div className="flex items-center gap-2">
+                <ForgeSkillsLogo />
+  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
+</div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
