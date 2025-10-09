@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 
-
 export default function LandingPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash.includes("access_token=")) {
+      router.replace(`/auth/callback${window.location.hash}`);
+    }
+  }, [router]);
+
   return (
     <main className="flex min-h-screen flex-col bg-black text-white relative overflow-hidden">
       <SiteHeader />
