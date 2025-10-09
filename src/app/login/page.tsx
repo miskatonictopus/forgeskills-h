@@ -1,11 +1,14 @@
-import { LoginForm } from "@/components/login-form"
+"use client";
+
+import { Suspense } from "react";
+import { LoginForm } from "@/components/login-form";
+
+export const dynamic = "force-dynamic"; // opcional: evita problemas de prerender
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-zinc-950 p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <LoginForm />
-      </div>
-    </div>
-  )
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
 }
