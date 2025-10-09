@@ -2,17 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-type CookieOptions = {
-  path?: string;
-  domain?: string;
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: "lax" | "strict" | "none";
-  expires?: Date;
-  maxAge?: number;
-};
-
 export async function POST(req: Request) {
+  // Verifica cabecera
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     return NextResponse.json(
@@ -21,19 +12,16 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: unknown;
+  // Parseo del body
+  let body: { email?: string; password?: string } | null = null;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (typeof body !== "object" || body === null) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
-  }
-
-  const email = String((body as { email?: string }).email ?? "").trim();
-  const password = String((body as { password?: string }).password ?? "");
+  const email = body?.email?.trim() ?? "";
+  const password = body?.password ?? "";
 
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -42,8 +30,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Password is required" }, { status: 400 });
   }
 
+  // Configura cookies (nuevo API Supabase SSR)
   const cookieStore = await cookies();
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -63,6 +51,7 @@ export async function POST(req: Request) {
     }
   );
 
+  // Login
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -73,5 +62,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true, userId: data.user?.id ?? null });
+  // OK → devuelve userId y deja cookies listas
+  return NextResponse.json({
+    ok: true,
+    userId: data.user?.id ?? null,
+  });
 }
