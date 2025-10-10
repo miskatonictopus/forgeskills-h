@@ -1,13 +1,13 @@
+// src/components/ProtectedShell.tsx
 "use client";
 
 import * as React from "react";
-import { usePersistentStore } from "@/hooks/usePersistentStore";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   EntityCreateDialog,
-  FieldConfig,
-  FormValues,
+  type FieldConfig,
+  type FormValues,
 } from "@/components/EntityCreateDialog";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
@@ -23,27 +23,15 @@ type EntityType = "curso" | "asignatura" | "alumno";
 
 const entityConfigs: Record<EntityType, ReadonlyArray<FieldConfig>> = {
   curso: [
-    { name: "acronimo", label: "Acrónimo", type: "text", required: true, placeholder: "DAMM" },
-    { name: "nombre", label: "Nombre del curso", type: "text", required: true, placeholder: "Diseño de Aplicaciones Multiplataforma" },
+    { name: "acronimo", label: "Acrónimo", type: "text", required: true, placeholder: "SMX / ASIX / DAM / DAW" },
+    { name: "nombre",   label: "Nombre del curso", type: "text", required: true, placeholder: "Sistemas Microinformáticos y Redes" },
     {
-      name: "nivel",
-      label: "Nivel",
-      type: "select",
-      required: true,
-      options: [
-        { label: "1", value: "1" },
-        { label: "2", value: "2" },
-      ],
+      name: "nivel", label: "Nivel", type: "select", required: true,
+      options: [{ label: "1", value: "1" }, { label: "2", value: "2" }],
     },
     {
-      name: "grado",
-      label: "Grado",
-      type: "select",
-      required: true,
-      options: [
-        { label: "medio", value: "medio" },
-        { label: "superior", value: "superior" },
-      ],
+      name: "grado", label: "Grado", type: "select", required: true,
+      options: [{ label: "medio", value: "medio" }, { label: "superior", value: "superior" }],
     },
   ],
   asignatura: [
@@ -58,6 +46,7 @@ const entityConfigs: Record<EntityType, ReadonlyArray<FieldConfig>> = {
 
 type Props = {
   children: React.ReactNode;
+  /** Solo para mostrar/ocultar LogoutButton en prod más adelante */
   variant: "dev" | "prod";
   fullName?: string;
   userEmail?: string;
@@ -69,49 +58,47 @@ export default function ProtectedShell({
   fullName,
   userEmail,
 }: Props) {
-  // Estado del diálogo genérico
+  // Diálogo genérico
   const [openEntityDialog, setOpenEntityDialog] = React.useState(false);
   const [currentEntity, setCurrentEntity] = React.useState<EntityType | null>(null);
 
-  // Prevención de hydration mismatch
+  // Evitar hydration mismatch
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-
-  // Persistencia local
-  const [cursos, setCursos] = usePersistentStore<FormValues[]>("fs_cursos", []);
+  if (!mounted) return null;
 
   const openDialogFor = (entity: EntityType) => {
     setCurrentEntity(entity);
     setOpenEntityDialog(true);
   };
 
-  const handleSubmit = async (values: FormValues) => {
+  // Guarda SIEMPRE en Supabase (dev y prod)
+  const handleSubmit = async (values: FormValues): Promise<void> => {
     if (!currentEntity) return;
+    try {
+      const supabase = supabaseBrowser();
 
-    if (currentEntity === "curso") {
-      if (variant === "dev") {
-        // 💾 Guardar localmente
-        setCursos((prev) => [...prev, values]);
-        console.log("💾 Curso guardado local:", values);
-        setOpenEntityDialog(false);
-      } else {
-        // ☁️ Guardar en Supabase
-        try {
-          const supabase = supabaseBrowser();
-          const { error } = await supabase.from("cursos").insert(values);
-          if (error) console.error("❌ Error al guardar en Supabase:", error);
-          else console.log("✅ Curso guardado en Supabase:", values);
-        } catch (e) {
-          console.error("❌ Error inesperado:", e);
-        } finally {
-          setOpenEntityDialog(false);
-        }
+      if (currentEntity === "curso") {
+        const payload = {
+          acronimo: String(values.acronimo ?? "").trim(),
+          nombre:   String(values.nombre ?? "").trim(),
+          nivel:    String(values.nivel ?? "").trim(),
+          grado:    String(values.grado ?? "").trim(),
+        };
+        const { error } = await supabase.from("cursos").insert([payload]);
+        if (error) throw error;
       }
+
+      // TODO: añadir inserciones para "asignatura" y "alumno" cuando estén las tablas
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : typeof e === "string" ? e : "Error desconocido al guardar la entidad.";
+      console.error("❌ Error al guardar entidad:", message);
+    } finally {
+      setOpenEntityDialog(false);
+      setCurrentEntity(null);
     }
   };
-
-  // 🧩 Evita el render SSR hasta que esté montado el cliente
-  if (!mounted) return null;
 
   return (
     <SidebarProvider>
@@ -137,38 +124,14 @@ export default function ProtectedShell({
         {/* MAIN */}
         <main className="flex flex-1 flex-col gap-4 p-4">
           {children}
-
-          {/* Vista previa de cursos persistidos (modo dev) */}
-          {variant === "dev" && (
-            <section className="grid gap-3 mt-2">
-              <h2 className="text-sm font-semibold text-muted-foreground">Cursos (local)</h2>
-              {cursos.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No hay cursos todavía.</p>
-              ) : (
-                <div className="grid gap-2">
-                  {cursos.map((curso, i) => (
-                    <div
-                      key={`${curso.acronimo}-${i}`}
-                      className="rounded-lg border border-border/30 p-3 bg-zinc-900/80 dark:bg-zinc-900/80 bg-card/60 shadow-sm transition-colors"
-                    >
-                      <div className="font-medium">{String(curso.nombre ?? "")}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {String(curso.acronimo ?? "")} — Nivel {String(curso.nivel ?? "")}, {String(curso.grado ?? "")}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
         </main>
 
         {/* FOOTER */}
         <footer className="border-t px-4 py-2 text-sm text-muted-foreground flex justify-between items-center">
-          {variant === "dev" ? (
-            <div><b>Invitado (dev)</b> — autenticación desactivada</div>
-          ) : (
+          {variant === "prod" ? (
             <div><b>{fullName ?? "Sin nombre definido"}</b> — {userEmail ?? "sin_email"}</div>
+          ) : (
+            <div><b>Invitado (dev)</b> — autenticación desactivada</div>
           )}
           <span className="text-xs text-muted-foreground/70">
             ForgeSkills © {new Date().getFullYear()}
@@ -179,26 +142,19 @@ export default function ProtectedShell({
       {/* DIALOG GENÉRICO */}
       {currentEntity && (
         <EntityCreateDialog
-        open={openEntityDialog}
-        onOpenChange={(v) => {
-          if (!v) setCurrentEntity(null); // cierra correctamente
-          setOpenEntityDialog(v);
-        }}
-        title={
-          currentEntity ? `Añadir ${currentEntity}` : "Añadir entidad"
-        }
-        description={
-          currentEntity
-            ? `Introduce los datos del nuevo ${currentEntity}.`
-            : undefined
-        }
-        _entity={currentEntity ?? "curso"}
-        fields={entityConfigs[currentEntity ?? "curso"]}
-        submitLabel={`Crear ${currentEntity ?? "curso"}`}
-        onSubmit={handleSubmit}
-        defaultValues={{}}
-      />
-      
+          open={openEntityDialog}
+          onOpenChange={(v) => {
+            if (!v) setCurrentEntity(null);
+            setOpenEntityDialog(v);
+          }}
+          title={`Añadir ${currentEntity}`}
+          description={`Introduce los datos del nuevo ${currentEntity}.`}
+          _entity={currentEntity}
+          fields={entityConfigs[currentEntity]}
+          submitLabel={`Crear ${currentEntity}`}
+          onSubmit={handleSubmit}
+          defaultValues={{}}
+        />
       )}
     </SidebarProvider>
   );
