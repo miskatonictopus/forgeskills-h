@@ -2,10 +2,18 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { listarCursos, type Curso } from "@/data/cursos.repo";
-import { Loader2 } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function SidebarCursosDynamic() {
+type Props = {
+  /** Prefijo de rutas protegidas. Ej: "/dashboard" */
+  basePath?: string;
+};
+
+export function SidebarCursosDynamic({ basePath = "/dashboard" }: Props) {
+  const pathname = usePathname();
   const [cursos, setCursos] = React.useState<Curso[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -33,28 +41,77 @@ export function SidebarCursosDynamic() {
     );
   }
 
-  if (cursos.length === 0) {
-    return (
-      <div className="px-3 py-2 text-xs text-muted-foreground">
-        No hay cursos registrados.
-      </div>
-    );
-  }
+  // Rutas fijas
+  const dashboardHref = `${basePath}`;
+  const calendarioHref = `${basePath}/calendario`;
+
+  const isActive = (href: string) =>
+    pathname === href || pathname?.startsWith(href + "/");
 
   return (
-    <ul className="space-y-1 px-2 py-1">
-      {cursos.map((c) => (
-        <li key={c.id}>
+    <div className="px-2 py-1 space-y-3">
+      {/* ==== Navegación fija ==== */}
+      <ul className="space-y-1">
+        <li>
           <Link
-            href={`/cursos/${c.id}`}
-            className="block rounded-md px-3 py-2 text-xs hover:bg-muted transition-colors"
+            href={dashboardHref}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+              isActive(dashboardHref) ? "bg-muted text-foreground" : "hover:bg-muted"
+            )}
+            aria-current={isActive(dashboardHref) ? "page" : undefined}
           >
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-foreground">{c.acronimo}{c.nivel}</span>
-            </div>
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="font-medium">Dashboard</span>
           </Link>
         </li>
-      ))}
-    </ul>
+        <li>
+          <Link
+            href={calendarioHref}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+              isActive(calendarioHref) ? "bg-muted text-foreground" : "hover:bg-muted"
+            )}
+            aria-current={isActive(calendarioHref) ? "page" : undefined}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="font-medium">Calendario</span>
+          </Link>
+        </li>
+      </ul>
+
+      {/* ==== Lista de cursos ==== */}
+      {cursos.length === 0 ? (
+        <div className="px-1 py-2 text-xs text-muted-foreground">
+          No hay cursos registrados.
+        </div>
+      ) : (
+        <ul className="space-y-1">
+          {cursos.map((c) => {
+            const href = `${basePath}/cursos/${c.id}`;
+            const active = isActive(href);
+            return (
+              <li key={c.id}>
+                <Link
+                  href={href}
+                  className={cn(
+                    "block rounded-md px-3 py-2 text-xs transition-colors",
+                    active ? "bg-muted text-foreground" : "hover:bg-muted"
+                  )}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">
+                      {c.acronimo}
+                      {c.nivel}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }

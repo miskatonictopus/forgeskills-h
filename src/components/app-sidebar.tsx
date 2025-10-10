@@ -70,8 +70,18 @@ const data: { navMain: NavItem[] } = {
       icon: LayoutDashboard,
       url: "/dashboard",
       items: [
-        { title: "Estadísticas", url: "/dashboard", isActive: false, icon: ChartSpline },
-        { title: "Informes", url: "/dashboard/informes", isActive: false, icon: File },
+        {
+          title: "Estadísticas",
+          url: "/dashboard",
+          isActive: false,
+          icon: ChartSpline,
+        },
+        {
+          title: "Informes",
+          url: "/dashboard/informes",
+          isActive: false,
+          icon: File,
+        },
       ],
     },
     {
@@ -134,7 +144,7 @@ const data: { navMain: NavItem[] } = {
       title: "Calendario",
       icon: CalendarDays,
       url: "/calendario",
-      items: [{ title: "Contribution Guide", url: "#" }],
+      items: [{ title: "Vista Global", url: "/calendario" }],
     },
     {
       title: "Configuración",
@@ -195,7 +205,9 @@ export function AppSidebar({
               <Link href="/" aria-label="Inicio ForgeSkills">
                 <div className="flex items-center gap-2">
                   <ForgeSkillsLogo />
-                  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    v1.0.0
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -208,52 +220,83 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {data.navMain.map((item, index) => (
-              <Collapsible key={item.title} defaultOpen={index === 0} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                      {item.icon ? <item.icon className="mr-2 h-4 w-4 text-muted-foreground" /> : null}
-                      <span>{item.title}</span>
-                      <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
-                      <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
+            {data.navMain.map((item, index) => {
+              const hasSubitems = !!item.items?.length;
 
-                  {item.items?.length ? (
+              return (
+                <Collapsible
+                  key={item.title}
+                  defaultOpen={index === 0}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem className="flex items-center">
+                    {/* 1) Título: LINK que navega */}
+                    <SidebarMenuButton asChild className="flex-1">
+                      <Link href={item.url}>
+                        {item.icon ? (
+                          <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        ) : null}
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+
+                    {/* 2) Toggle: SOLO expande/colapsa (si hay subitems) */}
+                    {hasSubitems && (
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={`Alternar ${item.title}`}
+                          className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+                          onClick={(e) => e.stopPropagation()} // evita interferir con el Link
+                        >
+                          <Plus className="h-4 w-4 group-data-[state=open]/collapsible:hidden" />
+                          <Minus className="h-4 w-4 group-data-[state=closed]/collapsible:hidden" />
+                        </button>
+                      </CollapsibleTrigger>
+                    )}
+                  </SidebarMenuItem>
+
+                  {/* 3) Contenido colapsable */}
+                  {hasSubitems && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {item.items.map((subItem, i) => {
-                          // 🔹 Render personalizado (lista dinámica)
+                        {item.items!.map((subItem, i) => {
                           if (subItem.customRender) {
                             return (
-                              <SidebarMenuSubItem key={`custom-${item.title}-${i}`}>
+                              <SidebarMenuSubItem
+                                key={`custom-${item.title}-${i}`}
+                              >
                                 {subItem.customRender()}
                               </SidebarMenuSubItem>
                             );
                           }
-
-                          // 🔹 Botón de acción (Añadir curso, etc.)
                           if (subItem.isButton) {
                             return (
-                              <SidebarMenuSubItem key={subItem.title ?? `btn-${i}`}>
+                              <SidebarMenuSubItem
+                                key={subItem.title ?? `btn-${i}`}
+                              >
                                 <Button
                                   variant="outline"
                                   className="w-full justify-start"
                                   onClick={() => handleAction(subItem)}
                                 >
-                                  {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
+                                  {subItem.icon && (
+                                    <subItem.icon className="mr-2 h-4 w-4" />
+                                  )}
                                   {subItem.title}
                                 </Button>
                               </SidebarMenuSubItem>
                             );
                           }
-
-                          // 🔹 Enlace normal
                           return (
-                            <SidebarMenuSubItem key={subItem.title ?? `itm-${i}`}>
-                              <SidebarMenuSubButton asChild isActive={!!subItem.isActive}>
-                                <Link href={subItem.url ?? "#"} className="flex items-center gap-2">
+                            <SidebarMenuSubItem
+                              key={subItem.title ?? `itm-${i}`}
+                            >
+                              <SidebarMenuSubButton asChild>
+                                <Link
+                                  href={subItem.url ?? "#"}
+                                  className="flex items-center gap-2"
+                                >
                                   {subItem.icon && (
                                     <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                   )}
@@ -265,10 +308,10 @@ export function AppSidebar({
                         })}
                       </SidebarMenuSub>
                     </CollapsibleContent>
-                  ) : null}
-                </SidebarMenuItem>
-              </Collapsible>
-            ))}
+                  )}
+                </Collapsible>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
