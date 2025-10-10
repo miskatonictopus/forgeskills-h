@@ -1,7 +1,26 @@
+"use client";
+
 import * as React from "react";
-import { Minus, Plus, LayoutDashboard, GraduationCap, BookUser, ChartSpline, File } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Minus,
+  Plus,
+  LayoutDashboard,
+  GraduationCap,
+  BookUser,
+  ChartSpline,
+  File,
+  PenLine,
+  Flag,
+  CalendarDays,
+  Settings,
+  CircleUserRound,
+  CirclePlus,
+} from "lucide-react";
 import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -21,12 +40,16 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// ✅ Tipos de datos
+/* ========= Tipos ========= */
+type SubAction = "addCourse" | "addAsignatura" | "addAlumno";
+
 type NavSubItem = {
   title: string;
   url: string;
   isActive?: boolean;
-  icon?: React.ElementType; // 👈 añade esta línea
+  icon?: React.ElementType;
+  isButton?: boolean;
+  action?: SubAction; // 👈 qué acción dispara el botón
 };
 
 type NavItem = {
@@ -36,52 +59,45 @@ type NavItem = {
   items?: NavSubItem[];
 };
 
-// ✅ Datos con tipado correcto
+/* ========= Datos ========= */
 const data: { navMain: NavItem[] } = {
   navMain: [
     {
       title: "Dashboard",
       icon: LayoutDashboard,
-      url: "#",
+      url: "/dashboard",
       items: [
-        {
-          title: "Estadísticas",
-          url: "/dashboard",
-          isActive: false,
-          icon: ChartSpline, // 👈 icono delante del título “Estadísticas”
-        },
-        {
-          title: "Informes",
-          url: "/dashboard",
-          isActive: false,
-          icon: File, // 👈 icono delante del título “Estadísticas”
-        },
+        { title: "Estadísticas", url: "/dashboard", isActive: false, icon: ChartSpline },
+        { title: "Informes", url: "/dashboard/informes", isActive: false, icon: File },
       ],
     },
     {
       title: "Mis Cursos",
       icon: GraduationCap,
-      url: "#",
+      url: "/cursos",
       items: [
-        { title: "Routing", url: "#" },
-        { title: "Data Fetching", url: "#", isActive: true },
-        { title: "Rendering", url: "#" },
-        { title: "Caching", url: "#" },
-        { title: "Styling", url: "#" },
-        { title: "Optimizing", url: "#" },
-        { title: "Configuring", url: "#" },
-        { title: "Testing", url: "#" },
-        { title: "Authentication", url: "#" },
-        { title: "Deploying", url: "#" },
-        { title: "Upgrading", url: "#" },
-        { title: "Examples", url: "#" },
+        {
+          title: "Añadir curso",
+          url: "/cursos/nuevo", // fallback de navegación
+          isButton: true,
+          action: "addCourse",   // 👈 dispara onAddCourse()
+          icon: CirclePlus,
+        },
       ],
     },
     {
       title: "Mis Asignaturas",
       icon: BookUser,
-      url: "#",
+      url: "/asignaturas",
       items: [
+        // 👇 Si quieres el botón para asignaturas, descomenta:
+        // {
+        //   title: "Añadir asignatura",
+        //   url: "/asignaturas/nueva",
+        //   isButton: true,
+        //   action: "addAsignatura",
+        //   icon: CirclePlus,
+        // },
         { title: "Components", url: "#" },
         { title: "File Conventions", url: "#" },
         { title: "Functions", url: "#" },
@@ -91,8 +107,9 @@ const data: { navMain: NavItem[] } = {
       ],
     },
     {
-      title: "Architecture",
-      url: "#",
+      title: "Mis Actividades",
+      icon: PenLine,
+      url: "/actividades",
       items: [
         { title: "Accessibility", url: "#" },
         { title: "Fast Refresh", url: "#" },
@@ -102,15 +119,68 @@ const data: { navMain: NavItem[] } = {
       ],
     },
     {
-      title: "Community",
-      url: "#",
+      title: "Mis Programaciones",
+      icon: Flag,
+      url: "/programaciones",
+      items: [{ title: "Contribution Guide", url: "#" }],
+    },
+    {
+      title: "Calendario",
+      icon: CalendarDays,
+      url: "/calendario",
+      items: [{ title: "Contribution Guide", url: "#" }],
+    },
+    {
+      title: "Configuración",
+      icon: Settings,
+      url: "/configuracion",
+      items: [{ title: "Contribution Guide", url: "#" }],
+    },
+    {
+      title: "Mi Cuenta",
+      icon: CircleUserRound,
+      url: "/cuenta",
       items: [{ title: "Contribution Guide", url: "#" }],
     },
   ],
 };
 
-// ✅ Sidebar Component
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+/* ========= Sidebar ========= */
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  onAddCourse?: () => void;
+  onAddAsignatura?: () => void;
+  onAddAlumno?: () => void;
+};
+
+export function AppSidebar({
+  onAddCourse,
+  onAddAsignatura,
+  onAddAlumno,
+  ...props
+}: AppSidebarProps) {
+  const router = useRouter();
+
+  const handleAction = React.useCallback(
+    (sub: NavSubItem) => {
+      // Dispatcher por acción
+      if (sub.action === "addCourse") {
+        if (onAddCourse) return onAddCourse();
+        return router.push(sub.url || "/cursos/nuevo"); // fallback
+      }
+      if (sub.action === "addAsignatura") {
+        if (onAddAsignatura) return onAddAsignatura();
+        return router.push(sub.url || "/asignaturas/nueva");
+      }
+      if (sub.action === "addAlumno") {
+        if (onAddAlumno) return onAddAlumno();
+        return router.push(sub.url || "/alumnos/nuevo");
+      }
+      // Si no hay action, navega normal
+      return router.push(sub.url || "/");
+    },
+    [onAddCourse, onAddAsignatura, onAddAlumno, router]
+  );
+
   return (
     <Sidebar {...props}>
       {/* HEADER */}
@@ -118,14 +188,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <Link href="/" aria-label="Inicio ForgeSkills">
                 <div className="flex items-center gap-2">
                   <ForgeSkillsLogo />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    v1.0.0
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -137,45 +205,52 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarMenu>
             {data.navMain.map((item, index) => (
-              <Collapsible
-                key={item.title}
-                defaultOpen={index === 0}
-                className="group/collapsible"
-              >
+              <Collapsible key={item.title} defaultOpen={index === 0} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
-                      {/* Icono si existe */}
-                      {item.icon ? (
-                        <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      ) : null}
+                      {item.icon ? <item.icon className="mr-2 h-4 w-4 text-muted-foreground" /> : null}
                       <span>{item.title}</span>
                       <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
                       <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
 
-                  {/* Subitems */}
-                  {/* Subitems */}
-{item.items?.length ? (
-  <CollapsibleContent>
-    <SidebarMenuSub>
-      {item.items.map((subItem) => (
-        <SidebarMenuSubItem key={subItem.title}>
-          <SidebarMenuSubButton asChild isActive={!!subItem.isActive}>
-            <a href={subItem.url} className="flex items-center gap-2">
-              {subItem.icon && (
-                <subItem.icon className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span>{subItem.title}</span>
-            </a>
-          </SidebarMenuSubButton>
-        </SidebarMenuSubItem>
-      ))}
-    </SidebarMenuSub>
-  </CollapsibleContent>
-) : null}
+                  {item.items?.length ? (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items.map((subItem) => {
+                          if (subItem.isButton) {
+                            return (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start"
+                                  onClick={() => handleAction(subItem)}
+                                >
+                                  {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
+                                  {subItem.title}
+                                </Button>
+                              </SidebarMenuSubItem>
+                            );
+                          }
 
+                          return (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild isActive={!!subItem.isActive}>
+                                <Link href={subItem.url} className="flex items-center gap-2">
+                                  {subItem.icon && (
+                                    <subItem.icon className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  ) : null}
                 </SidebarMenuItem>
               </Collapsible>
             ))}
