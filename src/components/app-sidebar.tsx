@@ -24,6 +24,8 @@ import {
   Settings,
   CircleUserRound,
   CirclePlus,
+  Presentation,
+  UserRound,
 } from "lucide-react";
 import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form";
@@ -109,6 +111,12 @@ const data: { navMain: NavItem[] } = {
       ],
     },
     {
+      title: "Mis Alumnos",
+      icon: UserRound,
+      url: "#",
+      items: [{ title: "Contribution Guide", url: "#" }],
+    },
+    {
       title: "Mis Actividades",
       icon: PenLine,
       url: "/dashboard/actividades",
@@ -130,6 +138,12 @@ const data: { navMain: NavItem[] } = {
       title: "Calendario",
       icon: CalendarDays,
       url: "/dashboard/calendario",
+      items: [{ title: "Vista Global", url: "/dashboard/calendario" }],
+    },
+    {
+      title: "Presentaciones",
+      icon: Presentation,
+      url: "#",
       items: [{ title: "Vista Global", url: "/dashboard/calendario" }],
     },
     {
