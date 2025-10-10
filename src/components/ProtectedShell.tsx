@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation"; // 👈 importa router
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -46,7 +47,6 @@ const entityConfigs: Record<EntityType, ReadonlyArray<FieldConfig>> = {
 
 type Props = {
   children: React.ReactNode;
-  /** Solo para mostrar/ocultar LogoutButton en prod más adelante */
   variant: "dev" | "prod";
   fullName?: string;
   userEmail?: string;
@@ -58,6 +58,8 @@ export default function ProtectedShell({
   fullName,
   userEmail,
 }: Props) {
+  const router = useRouter(); // 👈 usa router
+
   // Diálogo genérico
   const [openEntityDialog, setOpenEntityDialog] = React.useState(false);
   const [currentEntity, setCurrentEntity] = React.useState<EntityType | null>(null);
@@ -72,7 +74,7 @@ export default function ProtectedShell({
     setOpenEntityDialog(true);
   };
 
-  // Guarda SIEMPRE en Supabase (dev y prod)
+  // Guarda SIEMPRE en Supabase (dev y prod) y refresca el server component
   const handleSubmit = async (values: FormValues): Promise<void> => {
     if (!currentEntity) return;
     try {
@@ -87,6 +89,9 @@ export default function ProtectedShell({
         };
         const { error } = await supabase.from("cursos").insert([payload]);
         if (error) throw error;
+
+        // 🔄 vuelve a renderizar el Dashboard (server component) para que aparezca la tarjeta nueva
+        router.refresh();
       }
 
       // TODO: añadir inserciones para "asignatura" y "alumno" cuando estén las tablas

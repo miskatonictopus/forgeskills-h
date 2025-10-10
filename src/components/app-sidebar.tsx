@@ -1,5 +1,6 @@
 "use client";
 
+import { SidebarCursosDynamic } from "@/components/sidebar/SidebarCursosDynamic";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,12 +45,14 @@ import {
 type SubAction = "addCourse" | "addAsignatura" | "addAlumno";
 
 type NavSubItem = {
-  title: string;
-  url: string;
+  title?: string;
+  url?: string;
   isActive?: boolean;
   icon?: React.ElementType;
   isButton?: boolean;
-  action?: SubAction; // 👈 qué acción dispara el botón
+  action?: SubAction;
+  /** Render personalizado (ej. lista dinámica de cursos) */
+  customRender?: () => React.ReactNode;
 };
 
 type NavItem = {
@@ -78,10 +81,14 @@ const data: { navMain: NavItem[] } = {
       items: [
         {
           title: "Añadir curso",
-          url: "/cursos/nuevo", // fallback de navegación
+          url: "/cursos/nuevo",
           isButton: true,
-          action: "addCourse",   // 👈 dispara onAddCourse()
+          action: "addCourse",
           icon: CirclePlus,
+        },
+        // 👇 lista dinámica de cursos (en tiempo real)
+        {
+          customRender: () => <SidebarCursosDynamic />,
         },
       ],
     },
@@ -90,7 +97,6 @@ const data: { navMain: NavItem[] } = {
       icon: BookUser,
       url: "/asignaturas",
       items: [
-        // 👇 Si quieres el botón para asignaturas, descomenta:
         // {
         //   title: "Añadir asignatura",
         //   url: "/asignaturas/nueva",
@@ -162,10 +168,9 @@ export function AppSidebar({
 
   const handleAction = React.useCallback(
     (sub: NavSubItem) => {
-      // Dispatcher por acción
       if (sub.action === "addCourse") {
         if (onAddCourse) return onAddCourse();
-        return router.push(sub.url || "/cursos/nuevo"); // fallback
+        return router.push(sub.url || "/cursos/nuevo");
       }
       if (sub.action === "addAsignatura") {
         if (onAddAsignatura) return onAddAsignatura();
@@ -175,7 +180,6 @@ export function AppSidebar({
         if (onAddAlumno) return onAddAlumno();
         return router.push(sub.url || "/alumnos/nuevo");
       }
-      // Si no hay action, navega normal
       return router.push(sub.url || "/");
     },
     [onAddCourse, onAddAsignatura, onAddAlumno, router]
@@ -219,10 +223,20 @@ export function AppSidebar({
                   {item.items?.length ? (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {item.items.map((subItem) => {
+                        {item.items.map((subItem, i) => {
+                          // 🔹 Render personalizado (lista dinámica)
+                          if (subItem.customRender) {
+                            return (
+                              <SidebarMenuSubItem key={`custom-${item.title}-${i}`}>
+                                {subItem.customRender()}
+                              </SidebarMenuSubItem>
+                            );
+                          }
+
+                          // 🔹 Botón de acción (Añadir curso, etc.)
                           if (subItem.isButton) {
                             return (
-                              <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubItem key={subItem.title ?? `btn-${i}`}>
                                 <Button
                                   variant="outline"
                                   className="w-full justify-start"
@@ -235,10 +249,11 @@ export function AppSidebar({
                             );
                           }
 
+                          // 🔹 Enlace normal
                           return (
-                            <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubItem key={subItem.title ?? `itm-${i}`}>
                               <SidebarMenuSubButton asChild isActive={!!subItem.isActive}>
-                                <Link href={subItem.url} className="flex items-center gap-2">
+                                <Link href={subItem.url ?? "#"} className="flex items-center gap-2">
                                   {subItem.icon && (
                                     <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                   )}

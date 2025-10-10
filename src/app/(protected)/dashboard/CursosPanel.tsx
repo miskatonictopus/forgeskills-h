@@ -57,11 +57,6 @@ export default function CursosPanel() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Cursos (BD local Supabase)</h2>
-        <Button onClick={() => setOpen(true)}>Añadir curso</Button>
-      </div>
-
       {loading && <p>Cargando cursos…</p>}
       {error && (
         <p className="text-sm text-red-500">
