@@ -1,22 +1,50 @@
 "use client";
-
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { SidebarCursosDynamic } from "@/components/sidebar/SidebarCursosDynamic";
+import type { PostgrestError } from "@supabase/supabase-js";
+import {
+  AsignaturaPickerDialog,
+  type AsignaturaItem,
+} from "@/components/asignaturas/AsignaturaPickerDialog";
+import { SelectCursoDialog } from "@/components/asignaturas/SelectCursoDialog";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Minus, Plus, LayoutDashboard, GraduationCap, BookUser, ChartSpline, File,
-  PenLine, Flag, CalendarDays, Settings, CircleUserRound, CirclePlus,
+  Minus,
+  Plus,
+  LayoutDashboard,
+  GraduationCap,
+  BookUser,
+  ChartSpline,
+  File,
+  PenLine,
+  Flag,
+  CalendarDays,
+  Settings,
+  CircleUserRound,
+  CirclePlus,
 } from "lucide-react";
 import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form";
 import { Button } from "@/components/ui/button";
 import {
-  Collapsible, CollapsibleContent, CollapsibleTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton,
-  SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 
 /* ========= Tipos ========= */
@@ -63,7 +91,6 @@ const data: { navMain: NavItem[] } = {
           action: "addCourse",
           icon: CirclePlus,
         },
-        // Solo lista dinámica de cursos
         { customRender: () => <SidebarCursosDynamic basePath="/dashboard" /> },
       ],
     },
@@ -72,12 +99,13 @@ const data: { navMain: NavItem[] } = {
       icon: BookUser,
       url: "/dashboard/asignaturas",
       items: [
-        { title: "Components", url: "#" },
-        { title: "File Conventions", url: "#" },
-        { title: "Functions", url: "#" },
-        { title: "next.config.js Options", url: "#" },
-        { title: "CLI", url: "#" },
-        { title: "Edge Runtime", url: "#" },
+        {
+          title: "Añadir asignatura",
+          url: "/dashboard/asignaturas/nueva",
+          isButton: true,
+          action: "addAsignatura",
+          icon: CirclePlus,
+        },
       ],
     },
     {
@@ -101,8 +129,8 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Calendario",
       icon: CalendarDays,
-      url: "/calendario",
-      items: [{ title: "Vista Global", url: "/calendario" }],
+      url: "/dashboard/calendario",
+      items: [{ title: "Vista Global", url: "/dashboard/calendario" }],
     },
     {
       title: "Configuración",
@@ -122,7 +150,7 @@ const data: { navMain: NavItem[] } = {
 /* ========= Sidebar ========= */
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onAddCourse?: () => void;
-  onAddAsignatura?: () => void;
+  onAddAsignatura?: () => void; // si lo tienes, se respeta
   onAddAlumno?: () => void;
 };
 
@@ -134,6 +162,84 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const router = useRouter();
 
+  // Estado diálogos
+  const [openAsignaturaPicker, setOpenAsignaturaPicker] = React.useState(false);
+  const [openSelectCurso, setOpenSelectCurso] = React.useState(false);
+  const [seleccionadas, setSeleccionadas] = React.useState<AsignaturaItem[]>(
+    []
+  );
+
+  // 👉 stub de persistencia: cambia esto por tu llamada a DB / API
+
+  function isPostgrestError(e: unknown): e is PostgrestError {
+    return typeof e === "object" && e !== null && "message" in e && "code" in e;
+  }
+
+  async function linkAsignaturasACurso(
+    cursoId: string,
+    asignaturas: AsignaturaItem[]
+  ) {
+    if (!cursoId || asignaturas.length === 0) return;
+
+    const supabase = supabaseBrowser();
+
+    const rows = asignaturas.map((a) => ({
+      id: crypto.randomUUID(), // por si el default uuid no está
+      curso_id: String(cursoId),
+      asignatura_id: String(a.id),
+      asignatura_nombre: String(a.nombre ?? ""),
+    }));
+
+    const { data, error, status } = await supabase
+      .from("curso_asignaturas")
+      .upsert(rows, { onConflict: "curso_id,asignatura_id" })
+      .select();
+
+    if (error) {
+      const base = { status };
+      if (isPostgrestError(error)) {
+        console.error("❌ Upsert curso_asignaturas FAILED:", {
+          ...base,
+          code: error.code,
+          message: error.message,
+          details: error.details ?? null,
+          hint: error.hint ?? null,
+        });
+      } else {
+        // fallback por si viniese otro shape
+        console.error(
+          "❌ Upsert curso_asignaturas FAILED (unknown error):",
+          base
+        );
+      }
+      return;
+    }
+
+    console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
+    console.log("🔎 Rows:", data);
+  }
+
+  // 1) Tras elegir asignaturas en el picker
+  const handleAsignaturasSeleccionadas = React.useCallback(
+    (items: AsignaturaItem[]) => {
+      setSeleccionadas(items);
+      setOpenSelectCurso(true);
+    },
+    []
+  );
+
+  // 2) Tras elegir el curso en el segundo diálogo
+  const handleCursoSeleccionado = React.useCallback(
+    async (cursoId: string) => {
+      setOpenSelectCurso(false);
+      await linkAsignaturasACurso(cursoId, seleccionadas);
+      setSeleccionadas([]);
+      // Opcional: router.refresh() o navegar
+      // router.push(`/dashboard/cursos/${cursoId}`);
+    },
+    [seleccionadas]
+  );
+
   const handleAction = React.useCallback(
     (sub: NavSubItem) => {
       if (sub.action === "addCourse") {
@@ -142,7 +248,8 @@ export function AppSidebar({
       }
       if (sub.action === "addAsignatura") {
         if (onAddAsignatura) return onAddAsignatura();
-        return router.push(sub.url || "/dashboard/asignaturas/nueva");
+        setOpenAsignaturaPicker(true);
+        return;
       }
       if (sub.action === "addAlumno") {
         if (onAddAlumno) return onAddAlumno();
@@ -163,7 +270,9 @@ export function AppSidebar({
               <Link href="/" aria-label="Inicio ForgeSkills">
                 <div className="flex items-center gap-2">
                   <ForgeSkillsLogo />
-                  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    v1.0.0
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -185,7 +294,6 @@ export function AppSidebar({
                   className="group/collapsible"
                 >
                   <SidebarMenuItem className="flex items-center">
-                    {/* Título que NAVEGA */}
                     <SidebarMenuButton asChild className="flex-1">
                       <Link href={item.url}>
                         {item.icon ? (
@@ -194,8 +302,6 @@ export function AppSidebar({
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
-
-                    {/* Toggle +/− solo si hay subitems */}
                     {hasSubitems && (
                       <CollapsibleTrigger asChild>
                         <button
@@ -211,36 +317,46 @@ export function AppSidebar({
                     )}
                   </SidebarMenuItem>
 
-                  {/* Subitems */}
                   {hasSubitems && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {item.items!.map((subItem, i) => {
                           if (subItem.customRender) {
                             return (
-                              <SidebarMenuSubItem key={`custom-${item.title}-${i}`}>
+                              <SidebarMenuSubItem
+                                key={`custom-${item.title}-${i}`}
+                              >
                                 {subItem.customRender()}
                               </SidebarMenuSubItem>
                             );
                           }
                           if (subItem.isButton) {
                             return (
-                              <SidebarMenuSubItem key={subItem.title ?? `btn-${i}`}>
+                              <SidebarMenuSubItem
+                                key={subItem.title ?? `btn-${i}`}
+                              >
                                 <Button
                                   variant="outline"
                                   className="w-full justify-start"
                                   onClick={() => handleAction(subItem)}
                                 >
-                                  {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
+                                  {subItem.icon && (
+                                    <subItem.icon className="mr-2 h-4 w-4" />
+                                  )}
                                   {subItem.title}
                                 </Button>
                               </SidebarMenuSubItem>
                             );
                           }
                           return (
-                            <SidebarMenuSubItem key={subItem.title ?? `itm-${i}`}>
+                            <SidebarMenuSubItem
+                              key={subItem.title ?? `itm-${i}`}
+                            >
                               <SidebarMenuSubButton asChild>
-                                <Link href={subItem.url ?? "#"} className="flex items-center gap-2">
+                                <Link
+                                  href={subItem.url ?? "#"}
+                                  className="flex items-center gap-2"
+                                >
                                   {subItem.icon && (
                                     <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                   )}
@@ -259,6 +375,19 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* DIALOGOS */}
+      <AsignaturaPickerDialog
+        open={openAsignaturaPicker}
+        onOpenChange={setOpenAsignaturaPicker}
+        onConfirm={handleAsignaturasSeleccionadas}
+      />
+
+      <SelectCursoDialog
+        open={openSelectCurso}
+        onOpenChange={setOpenSelectCurso}
+        onConfirm={handleCursoSeleccionado}
+      />
 
       <SidebarRail />
     </Sidebar>

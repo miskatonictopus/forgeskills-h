@@ -6,30 +6,38 @@ import ProtectedShell from "@/components/ProtectedShell";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const DEV_NO_AUTH =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_DEV_NO_AUTH === "1";
+
 export default async function ProtectedLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  // 🟢 DEV: bypass total
-  if (process.env.NODE_ENV === "development") {
-    console.log("🟢 Bypass total de autenticación en modo desarrollo");
+  // 🟢 DEV / BYPASS: sin sesión ni RLS estricta
+  if (DEV_NO_AUTH) {
     return <ProtectedShell variant="dev">{children}</ProtectedShell>;
   }
 
-  // 🔐 PROD/PREVIEW
+  // 🔐 PROD/PREVIEW: exigir sesión
   const supabase = await createServerSupabase();
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) redirect("/login?next=/dashboard");
+  const { data, error } = await supabase.auth.getUser();
+  const user = data?.user ?? null;
+
+  if (error || !user) {
+    // podrías construir el "next" dinámico con la ruta actual si quieres
+    redirect("/login?next=/dashboard");
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
-    .eq("id", auth.user.id)
+    .eq("id", user.id)
     .maybeSingle();
 
   const fullName = profile?.full_name ?? "Sin nombre definido";
-  const userEmail = auth.user.email ?? "sin_email";
+  const userEmail = user.email ?? "sin_email";
 
   return (
     <ProtectedShell variant="prod" fullName={fullName} userEmail={userEmail}>
