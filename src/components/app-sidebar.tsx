@@ -5,40 +5,18 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Minus,
-  Plus,
-  LayoutDashboard,
-  GraduationCap,
-  BookUser,
-  ChartSpline,
-  File,
-  PenLine,
-  Flag,
-  CalendarDays,
-  Settings,
-  CircleUserRound,
-  CirclePlus,
+  Minus, Plus, LayoutDashboard, GraduationCap, BookUser, ChartSpline, File,
+  PenLine, Flag, CalendarDays, Settings, CircleUserRound, CirclePlus,
 } from "lucide-react";
 import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form";
 import { Button } from "@/components/ui/button";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
+  Sidebar, SidebarContent, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuButton,
+  SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail,
 } from "@/components/ui/sidebar";
 
 /* ========= Tipos ========= */
@@ -51,7 +29,6 @@ type NavSubItem = {
   icon?: React.ElementType;
   isButton?: boolean;
   action?: SubAction;
-  /** Render personalizado (ej. lista dinámica de cursos) */
   customRender?: () => React.ReactNode;
 };
 
@@ -70,50 +47,31 @@ const data: { navMain: NavItem[] } = {
       icon: LayoutDashboard,
       url: "/dashboard",
       items: [
-        {
-          title: "Estadísticas",
-          url: "/dashboard",
-          isActive: false,
-          icon: ChartSpline,
-        },
-        {
-          title: "Informes",
-          url: "/dashboard/informes",
-          isActive: false,
-          icon: File,
-        },
+        { title: "Estadísticas", url: "/dashboard", icon: ChartSpline },
+        { title: "Informes", url: "/dashboard/informes", icon: File },
       ],
     },
     {
       title: "Mis Cursos",
       icon: GraduationCap,
-      url: "/cursos",
+      url: "/dashboard/cursos",
       items: [
         {
           title: "Añadir curso",
-          url: "/cursos/nuevo",
+          url: "/dashboard/cursos/nuevo",
           isButton: true,
           action: "addCourse",
           icon: CirclePlus,
         },
-        // 👇 lista dinámica de cursos (en tiempo real)
-        {
-          customRender: () => <SidebarCursosDynamic />,
-        },
+        // Solo lista dinámica de cursos
+        { customRender: () => <SidebarCursosDynamic basePath="/dashboard" /> },
       ],
     },
     {
       title: "Mis Asignaturas",
       icon: BookUser,
-      url: "/asignaturas",
+      url: "/dashboard/asignaturas",
       items: [
-        // {
-        //   title: "Añadir asignatura",
-        //   url: "/asignaturas/nueva",
-        //   isButton: true,
-        //   action: "addAsignatura",
-        //   icon: CirclePlus,
-        // },
         { title: "Components", url: "#" },
         { title: "File Conventions", url: "#" },
         { title: "Functions", url: "#" },
@@ -125,7 +83,7 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Mis Actividades",
       icon: PenLine,
-      url: "/actividades",
+      url: "/dashboard/actividades",
       items: [
         { title: "Accessibility", url: "#" },
         { title: "Fast Refresh", url: "#" },
@@ -137,7 +95,7 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Mis Programaciones",
       icon: Flag,
-      url: "/programaciones",
+      url: "/dashboard/programaciones",
       items: [{ title: "Contribution Guide", url: "#" }],
     },
     {
@@ -149,13 +107,13 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Configuración",
       icon: Settings,
-      url: "/configuracion",
+      url: "/dashboard/configuracion",
       items: [{ title: "Contribution Guide", url: "#" }],
     },
     {
       title: "Mi Cuenta",
       icon: CircleUserRound,
-      url: "/cuenta",
+      url: "/dashboard/cuenta",
       items: [{ title: "Contribution Guide", url: "#" }],
     },
   ],
@@ -180,17 +138,17 @@ export function AppSidebar({
     (sub: NavSubItem) => {
       if (sub.action === "addCourse") {
         if (onAddCourse) return onAddCourse();
-        return router.push(sub.url || "/cursos/nuevo");
+        return router.push(sub.url || "/dashboard/cursos/nuevo");
       }
       if (sub.action === "addAsignatura") {
         if (onAddAsignatura) return onAddAsignatura();
-        return router.push(sub.url || "/asignaturas/nueva");
+        return router.push(sub.url || "/dashboard/asignaturas/nueva");
       }
       if (sub.action === "addAlumno") {
         if (onAddAlumno) return onAddAlumno();
-        return router.push(sub.url || "/alumnos/nuevo");
+        return router.push(sub.url || "/dashboard/alumnos/nuevo");
       }
-      return router.push(sub.url || "/");
+      return router.push(sub.url || "/dashboard");
     },
     [onAddCourse, onAddAsignatura, onAddAlumno, router]
   );
@@ -205,9 +163,7 @@ export function AppSidebar({
               <Link href="/" aria-label="Inicio ForgeSkills">
                 <div className="flex items-center gap-2">
                   <ForgeSkillsLogo />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    v1.0.0
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -222,7 +178,6 @@ export function AppSidebar({
           <SidebarMenu>
             {data.navMain.map((item, index) => {
               const hasSubitems = !!item.items?.length;
-
               return (
                 <Collapsible
                   key={item.title}
@@ -230,7 +185,7 @@ export function AppSidebar({
                   className="group/collapsible"
                 >
                   <SidebarMenuItem className="flex items-center">
-                    {/* 1) Título: LINK que navega */}
+                    {/* Título que NAVEGA */}
                     <SidebarMenuButton asChild className="flex-1">
                       <Link href={item.url}>
                         {item.icon ? (
@@ -240,14 +195,14 @@ export function AppSidebar({
                       </Link>
                     </SidebarMenuButton>
 
-                    {/* 2) Toggle: SOLO expande/colapsa (si hay subitems) */}
+                    {/* Toggle +/− solo si hay subitems */}
                     {hasSubitems && (
                       <CollapsibleTrigger asChild>
                         <button
                           type="button"
                           aria-label={`Alternar ${item.title}`}
                           className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
-                          onClick={(e) => e.stopPropagation()} // evita interferir con el Link
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <Plus className="h-4 w-4 group-data-[state=open]/collapsible:hidden" />
                           <Minus className="h-4 w-4 group-data-[state=closed]/collapsible:hidden" />
@@ -256,47 +211,36 @@ export function AppSidebar({
                     )}
                   </SidebarMenuItem>
 
-                  {/* 3) Contenido colapsable */}
+                  {/* Subitems */}
                   {hasSubitems && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {item.items!.map((subItem, i) => {
                           if (subItem.customRender) {
                             return (
-                              <SidebarMenuSubItem
-                                key={`custom-${item.title}-${i}`}
-                              >
+                              <SidebarMenuSubItem key={`custom-${item.title}-${i}`}>
                                 {subItem.customRender()}
                               </SidebarMenuSubItem>
                             );
                           }
                           if (subItem.isButton) {
                             return (
-                              <SidebarMenuSubItem
-                                key={subItem.title ?? `btn-${i}`}
-                              >
+                              <SidebarMenuSubItem key={subItem.title ?? `btn-${i}`}>
                                 <Button
                                   variant="outline"
                                   className="w-full justify-start"
                                   onClick={() => handleAction(subItem)}
                                 >
-                                  {subItem.icon && (
-                                    <subItem.icon className="mr-2 h-4 w-4" />
-                                  )}
+                                  {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
                                   {subItem.title}
                                 </Button>
                               </SidebarMenuSubItem>
                             );
                           }
                           return (
-                            <SidebarMenuSubItem
-                              key={subItem.title ?? `itm-${i}`}
-                            >
+                            <SidebarMenuSubItem key={subItem.title ?? `itm-${i}`}>
                               <SidebarMenuSubButton asChild>
-                                <Link
-                                  href={subItem.url ?? "#"}
-                                  className="flex items-center gap-2"
-                                >
+                                <Link href={subItem.url ?? "#"} className="flex items-center gap-2">
                                   {subItem.icon && (
                                     <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                   )}

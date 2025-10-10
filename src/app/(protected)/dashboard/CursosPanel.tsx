@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { EntityCreateDialog, type FieldConfig, type FormValues } from "@/components/EntityCreateDialog";
 import { crearCurso, listarCursos, type Curso } from "@/data/cursos.repo";
 
