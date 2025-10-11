@@ -149,7 +149,7 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Configuración",
       icon: Settings,
-      url: "/dashboard/configuracion",
+      url: "/configuracion",
       items: [{ title: "Contribution Guide", url: "#" }],
     },
     {
