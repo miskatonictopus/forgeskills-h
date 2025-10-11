@@ -1,35 +1,51 @@
+// src/data/asignaturas.server.ts
 import "server-only";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type AsignaturaSSR = {
-  id: string;          // código visible (p.ej. "0488")
+  asignatura_id: string;   // UUID real (para joins RA/CE)
+  codigo: string | null;   // p.ej. "1665"
   nombre: string;
   color?: string | null;
-  codigo?: string | null;
 };
 
-export async function getAsignaturaByCodigoServer(codigo: string) {
-  const supabase = await supabaseServer();
+const normCodigo = (s: string) =>
+  String(s ?? "").trim().replace(/\D/g, "").padStart(4, "0");
 
-  // 1) Si tienes una vista usada en el dashboard, intenta primero ahí.
-  const dash = await supabase
-    .from("asignaturas_dashboard")   // si no existe, seguirá al paso 2
-    .select("id,nombre,color,codigo")
-    .eq("id", codigo)
+export async function getAsignaturaByCodigoServer(codigoInput: string) {
+  const codigo = normCodigo(codigoInput);
+
+  // Si tienes una vista que expone el UUID real, úsala:
+  // Asegúrate de que la vista tenga una columna 'asignatura_id' (UUID)
+  const { data: vData } = await supabaseAdmin
+    .from("asignaturas_dashboard")
+    .select("asignatura_id, codigo, nombre, color")
+    .eq("codigo", codigo)
     .maybeSingle();
 
-  if (dash.data) return dash.data as AsignaturaSSR;
+  if (vData) {
+    return {
+      asignatura_id: vData.asignatura_id,
+      codigo: vData.codigo,
+      nombre: vData.nombre,
+      color: vData.color,
+    } as AsignaturaSSR;
+  }
 
-  // 2) Tabla base (ajusta el nombre si es distinto)
-  const numeric = Number(codigo);
-  const orParts = [`codigo.eq.${codigo}`, `id.eq.${codigo}`];
-  if (Number.isFinite(numeric)) orParts.push(`id.eq.${numeric}`);
-
-  const { data } = await supabase
+  // Tabla base
+  const { data, error } = await supabaseAdmin
     .from("asignaturas")
-    .select("id,nombre,color,codigo")
-    .or(orParts.join(","))
-    .single();
+    .select("id, codigo, nombre, color")
+    .eq("codigo", codigo)
+    .maybeSingle();
 
-  return (data as AsignaturaSSR) ?? null;
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    asignatura_id: data.id,
+    codigo: data.codigo,
+    nombre: data.nombre,
+    color: data.color,
+  } as AsignaturaSSR;
 }

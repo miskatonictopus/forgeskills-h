@@ -21,6 +21,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner"
 
 /* ========= Tipos ========= */
 
@@ -41,10 +42,9 @@ export type FieldConfig = {
   type: FieldType;
   placeholder?: string;
   required?: boolean;
-  options?: ReadonlyArray<Option>; // solo cuando type = "select"
+  options?: ReadonlyArray<Option>;
 };
 
-/** Valores del formulario: mapeo simple clave→string|number */
 export type FormValues = Record<string, string | number>;
 
 type EntityCreateDialogProps = {
@@ -52,7 +52,6 @@ type EntityCreateDialogProps = {
   onOpenChange: (v: boolean) => void;
   title: string;
   description?: string;
-  /** Nombre informativo (si no lo usas, empieza con _ para evitar warning) */
   _entity?: string;
   fields: ReadonlyArray<FieldConfig>;
   defaultValues?: Partial<FormValues>;
@@ -66,14 +65,13 @@ export function EntityCreateDialog({
   onOpenChange,
   title,
   description,
-  _entity, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _entity,
   fields,
   defaultValues = {},
   submitLabel = "Guardar",
   loadingText = "Guardando...",
   onSubmit,
 }: EntityCreateDialogProps) {
-  // Sin "any": inicializamos con Partial<FormValues> y lo tratamos como FormValues en runtime.
   const [form, setForm] = React.useState<FormValues>(() => {
     const initial: FormValues = {};
     Object.entries(defaultValues).forEach(([k, v]) => {
@@ -105,7 +103,7 @@ export function EntityCreateDialog({
     setLoading(true);
     setError(null);
     try {
-      // Validación mínima required:
+      // Validación mínima
       for (const f of fields) {
         if (f.required) {
           const v = form[f.name];
@@ -114,11 +112,33 @@ export function EntityCreateDialog({
           }
         }
       }
+
+      // Si estamos creando una asignatura, importamos RA/CE automáticamente
+      if (title.toLowerCase().includes("asignatura")) {
+        const codigo = String(form["codigo"] || "").trim();
+        if (!codigo) throw new Error("Falta el código de la asignatura para importar RA/CE.");
+
+        const res = await fetch("/api/asignaturas/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo }),
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          throw new Error(data.error || "Error al importar los RA/CE desde el JSON remoto.");
+        }
+
+        toast.success(`Asignatura "${data.asignatura}" importada con RA y CE.`);
+      }
+
       await onSubmit(form);
       onOpenChange(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo guardar.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -187,7 +207,6 @@ export function EntityCreateDialog({
       );
     }
 
-    // text, email, password, date…
     return (
       <div key={f.name} className="grid gap-2">
         <Label htmlFor={f.name}>
@@ -207,11 +226,11 @@ export function EntityCreateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-  className={cn(
-    "sm:max-w-lg border border-border/40 shadow-xl bg-background/80",
-    "dark:[&]:bg-zinc-900"
-  )}
->
+        className={cn(
+          "sm:max-w-lg border border-border/40 shadow-xl bg-background/80",
+          "dark:[&]:bg-zinc-900"
+        )}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
@@ -233,7 +252,6 @@ export function EntityCreateDialog({
             </Button>
             <Button type="submit" disabled={loading} variant="default">
               {loading ? loadingText : submitLabel}
-              
             </Button>
           </DialogFooter>
         </form>

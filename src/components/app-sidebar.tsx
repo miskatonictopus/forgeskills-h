@@ -188,42 +188,76 @@ export function AppSidebar({
   // ✅ Memo: evita recrear la función y permite ponerla en deps sin warnings
   const linkAsignaturasACurso = React.useCallback(
     async (cursoId: string, asignaturas: AsignaturaItem[]) => {
-      if (!cursoId || asignaturas.length === 0) return;
-
-      const supabase = supabaseBrowser();
-      const rows = asignaturas.map((a) => ({
-        id: crypto.randomUUID(),
-        curso_id: String(cursoId),
-        asignatura_id: String(a.id),
-        asignatura_nombre: String(a.nombre ?? ""),
-      }));
-
-      const { data, error, status } = await supabase
-        .from("curso_asignaturas")
-        .upsert(rows, { onConflict: "curso_id,asignatura_id" })
-        .select();
-
-      if (error) {
-        const base = { status };
-        if (isPostgrestError(error)) {
-          console.error("❌ Upsert curso_asignaturas FAILED:", {
-            ...base,
-            code: error.code,
-            message: error.message,
-            details: error.details ?? null,
-            hint: error.hint ?? null,
-          });
-        } else {
-          console.error("❌ Upsert curso_asignaturas FAILED (unknown error):", base);
+      try {
+        if (!cursoId || asignaturas.length === 0) return false;
+  
+        const supabase = supabaseBrowser();
+  
+        // 1) Deduplicar por id (por si el picker repite)
+        const uniques = Array.from(
+          new Map(asignaturas.map(a => [String(a.id), a])).values()
+        );
+  
+        // 2) Upsert curso_asignaturas
+        const rows = uniques.map((a) => ({
+          id: crypto.randomUUID(),                 // por si tu tabla no autogenera
+          curso_id: String(cursoId),
+          asignatura_id: String(a.id),
+          asignatura_nombre: String(a.nombre ?? ""),
+        }));
+  
+        const { data, error, status } = await supabase
+          .from("curso_asignaturas")
+          .upsert(rows, { onConflict: "curso_id,asignatura_id" })
+          .select();
+  
+        if (error) {
+          const base = { status };
+          if (isPostgrestError(error)) {
+            console.error("❌ Upsert curso_asignaturas FAILED:", {
+              ...base,
+              code: error.code,
+              message: error.message,
+              details: error.details ?? null,
+              hint: error.hint ?? null,
+            });
+          } else {
+            console.error("❌ Upsert curso_asignaturas FAILED (unknown error):", base);
+          }
+          return false;
         }
-        return;
+  
+        console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
+        console.log("🔎 Rows:", data);
+  
+        // 3) Importar asignaturas + RA/CE en segundo paso (server)
+        //    Crea/actualiza 'asignaturas' y asegura RA/CE desde el JSON si faltan
+        try {
+          await fetch("/api/asignaturas/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: uniques.map((a) => ({
+                id: String(a.id),
+                nombre: a.nombre ?? String(a.id),
+                // color: si quieres pasar el color inicial, añádelo aquí
+              })),
+            }),
+          });
+        } catch (e) {
+          console.error("⚠️ Import RA/CE failed:", e);
+          // no bloqueamos: el upsert del curso ya fue correcto
+        }
+  
+        return true;
+      } catch (e) {
+        console.error("linkAsignaturasACurso error:", e);
+        return false;
       }
-
-      console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
-      console.log("🔎 Rows:", data);
     },
-    []
+    [] // 👈 memorizada; en el handler usa [seleccionadas, linkAsignaturasACurso]
   );
+  
 
   // 1) Tras elegir asignaturas en el picker
   const handleAsignaturasSeleccionadas = React.useCallback((items: AsignaturaItem[]) => {
@@ -232,15 +266,11 @@ export function AppSidebar({
   }, []);
 
   // 2) Tras elegir el curso en el segundo diálogo
-  const handleCursoSeleccionado = React.useCallback(
-    async (cursoId: string) => {
-      setOpenSelectCurso(false);
-      await linkAsignaturasACurso(cursoId, seleccionadas);
-      setSeleccionadas([]);
-      // router.push(`/dashboard/cursos/${cursoId}`); // opcional
-    },
-    [seleccionadas, linkAsignaturasACurso] // ✅ añade la dependencia que pedía eslint
-  );
+  const handleCursoSeleccionado = React.useCallback(async (cursoId: string) => {
+    setOpenSelectCurso(false);
+    await linkAsignaturasACurso(cursoId, seleccionadas);
+    setSeleccionadas([]);
+  }, [seleccionadas, linkAsignaturasACurso]);
 
   const handleAction = React.useCallback(
     (sub: NavSubItem) => {
