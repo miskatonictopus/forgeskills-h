@@ -11,18 +11,18 @@ gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 export interface SplitTextProps {
   text: string;
   className?: string;
-  delay?: number;              // ms entre letras
-  duration?: number;           // s por letra
+  delay?: number;
+  duration?: number;
   ease?: string | ((t: number) => number);
   splitType?: "chars" | "words" | "lines" | "words, chars";
   from?: gsap.TweenVars;
   to?: gsap.TweenVars;
-  threshold?: number;          // sólo en modo 'scroll'
-  rootMargin?: string;         // sólo en modo 'scroll'
-  tag?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span";
+  threshold?: number;
+  rootMargin?: string;
+  tag?: keyof HTMLElementTagNameMap;
   textAlign?: React.CSSProperties["textAlign"];
   onLetterAnimationComplete?: () => void;
-  mode?: "mount" | "scroll";   // <<< NUEVO (por defecto 'mount')
+  mode?: "mount" | "scroll";
 }
 
 const SplitText: React.FC<SplitTextProps> = ({
@@ -41,8 +41,8 @@ const SplitText: React.FC<SplitTextProps> = ({
   onLetterAnimationComplete,
   mode = "mount",
 }) => {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
+  const ref = useRef<HTMLElement | null>(null);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
     if (document.fonts?.status === "loaded") setFontsLoaded(true);
@@ -54,8 +54,11 @@ const SplitText: React.FC<SplitTextProps> = ({
       if (!ref.current || !text || !fontsLoaded) return;
 
       const el = ref.current as HTMLElement & { _rbsplitInstance?: GSAPSplitText };
+
       if (el._rbsplitInstance) {
-        try { el._rbsplitInstance.revert(); } catch {}
+        try {
+          el._rbsplitInstance.revert();
+        } catch {}
         el._rbsplitInstance = undefined;
       }
 
@@ -92,7 +95,6 @@ const SplitText: React.FC<SplitTextProps> = ({
       if (mode === "mount") {
         gsap.fromTo(targets, { ...from }, tweenBase);
       } else {
-        // 🧷 Animación al entrar en viewport con ScrollTrigger (por si la necesitas)
         const startPct = (1 - threshold) * 100;
         const marginMatch = /^(-?\d+(?:\.\d+)?)(px|em|rem|%)?$/.exec(rootMargin);
         const marginValue = marginMatch ? parseFloat(marginMatch[1]) : 0;
@@ -119,7 +121,9 @@ const SplitText: React.FC<SplitTextProps> = ({
             if (st.trigger === el) st.kill();
           });
         }
-        try { splitInstance.revert(); } catch {}
+        try {
+          splitInstance.revert();
+        } catch {}
         el._rbsplitInstance = undefined;
       };
     },
@@ -135,21 +139,17 @@ const SplitText: React.FC<SplitTextProps> = ({
 
   const style: React.CSSProperties = {
     textAlign,
-    overflow: "hidden",         
+    overflow: "hidden",
     display: "inline-block",
     whiteSpace: "normal",
     wordWrap: "break-word",
     willChange: "transform, opacity",
-    margin: 0, 
+    margin: 0,
   };
   const classes = `split-parent ${className}`;
 
-  const Tag = tag as any;
-  return (
-    <Tag ref={ref} style={style} className={classes}>
-      {text}
-    </Tag>
-  );
+  // ✅ Crear el tag dinámico sin `JSX` namespace
+  return React.createElement(tag, { ref, style, className: classes }, text);
 };
 
 export default SplitText;

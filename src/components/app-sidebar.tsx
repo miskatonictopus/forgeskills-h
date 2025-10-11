@@ -99,7 +99,7 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Mis Asignaturas",
       icon: BookUser,
-      url: "/dashboard/asignaturas",
+      url: "/asignaturas", // ← coherente con el index que creaste en (protected)/asignaturas
       items: [
         {
           title: "Añadir asignatura",
@@ -164,7 +164,7 @@ const data: { navMain: NavItem[] } = {
 /* ========= Sidebar ========= */
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onAddCourse?: () => void;
-  onAddAsignatura?: () => void; // si lo tienes, se respeta
+  onAddAsignatura?: () => void;
   onAddAlumno?: () => void;
 };
 
@@ -179,68 +179,57 @@ export function AppSidebar({
   // Estado diálogos
   const [openAsignaturaPicker, setOpenAsignaturaPicker] = React.useState(false);
   const [openSelectCurso, setOpenSelectCurso] = React.useState(false);
-  const [seleccionadas, setSeleccionadas] = React.useState<AsignaturaItem[]>(
-    []
-  );
-
-  // 👉 stub de persistencia: cambia esto por tu llamada a DB / API
+  const [seleccionadas, setSeleccionadas] = React.useState<AsignaturaItem[]>([]);
 
   function isPostgrestError(e: unknown): e is PostgrestError {
     return typeof e === "object" && e !== null && "message" in e && "code" in e;
   }
 
-  async function linkAsignaturasACurso(
-    cursoId: string,
-    asignaturas: AsignaturaItem[]
-  ) {
-    if (!cursoId || asignaturas.length === 0) return;
+  // ✅ Memo: evita recrear la función y permite ponerla en deps sin warnings
+  const linkAsignaturasACurso = React.useCallback(
+    async (cursoId: string, asignaturas: AsignaturaItem[]) => {
+      if (!cursoId || asignaturas.length === 0) return;
 
-    const supabase = supabaseBrowser();
+      const supabase = supabaseBrowser();
+      const rows = asignaturas.map((a) => ({
+        id: crypto.randomUUID(),
+        curso_id: String(cursoId),
+        asignatura_id: String(a.id),
+        asignatura_nombre: String(a.nombre ?? ""),
+      }));
 
-    const rows = asignaturas.map((a) => ({
-      id: crypto.randomUUID(), // por si el default uuid no está
-      curso_id: String(cursoId),
-      asignatura_id: String(a.id),
-      asignatura_nombre: String(a.nombre ?? ""),
-    }));
+      const { data, error, status } = await supabase
+        .from("curso_asignaturas")
+        .upsert(rows, { onConflict: "curso_id,asignatura_id" })
+        .select();
 
-    const { data, error, status } = await supabase
-      .from("curso_asignaturas")
-      .upsert(rows, { onConflict: "curso_id,asignatura_id" })
-      .select();
-
-    if (error) {
-      const base = { status };
-      if (isPostgrestError(error)) {
-        console.error("❌ Upsert curso_asignaturas FAILED:", {
-          ...base,
-          code: error.code,
-          message: error.message,
-          details: error.details ?? null,
-          hint: error.hint ?? null,
-        });
-      } else {
-        // fallback por si viniese otro shape
-        console.error(
-          "❌ Upsert curso_asignaturas FAILED (unknown error):",
-          base
-        );
+      if (error) {
+        const base = { status };
+        if (isPostgrestError(error)) {
+          console.error("❌ Upsert curso_asignaturas FAILED:", {
+            ...base,
+            code: error.code,
+            message: error.message,
+            details: error.details ?? null,
+            hint: error.hint ?? null,
+          });
+        } else {
+          console.error("❌ Upsert curso_asignaturas FAILED (unknown error):", base);
+        }
+        return;
       }
-      return;
-    }
 
-    console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
-    console.log("🔎 Rows:", data);
-  }
-
-  // 1) Tras elegir asignaturas en el picker
-  const handleAsignaturasSeleccionadas = React.useCallback(
-    (items: AsignaturaItem[]) => {
-      setSeleccionadas(items);
-      setOpenSelectCurso(true);
+      console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
+      console.log("🔎 Rows:", data);
     },
     []
   );
+
+  // 1) Tras elegir asignaturas en el picker
+  const handleAsignaturasSeleccionadas = React.useCallback((items: AsignaturaItem[]) => {
+    setSeleccionadas(items);
+    setOpenSelectCurso(true);
+  }, []);
 
   // 2) Tras elegir el curso en el segundo diálogo
   const handleCursoSeleccionado = React.useCallback(
@@ -248,10 +237,9 @@ export function AppSidebar({
       setOpenSelectCurso(false);
       await linkAsignaturasACurso(cursoId, seleccionadas);
       setSeleccionadas([]);
-      // Opcional: router.refresh() o navegar
-      // router.push(`/dashboard/cursos/${cursoId}`);
+      // router.push(`/dashboard/cursos/${cursoId}`); // opcional
     },
-    [seleccionadas]
+    [seleccionadas, linkAsignaturasACurso] // ✅ añade la dependencia que pedía eslint
   );
 
   const handleAction = React.useCallback(
@@ -284,9 +272,7 @@ export function AppSidebar({
               <Link href="/" aria-label="Inicio ForgeSkills">
                 <div className="flex items-center gap-2">
                   <ForgeSkillsLogo />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    v1.0.0
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">v1.0.0</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -302,17 +288,11 @@ export function AppSidebar({
             {data.navMain.map((item, index) => {
               const hasSubitems = !!item.items?.length;
               return (
-                <Collapsible
-                  key={item.title}
-                  defaultOpen={index === 0}
-                  className="group/collapsible"
-                >
+                <Collapsible key={item.title} defaultOpen={index === 0} className="group/collapsible">
                   <SidebarMenuItem className="flex items-center">
                     <SidebarMenuButton asChild className="flex-1">
                       <Link href={item.url}>
-                        {item.icon ? (
-                          <item.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        ) : null}
+                        {item.icon ? <item.icon className="mr-2 h-4 w-4 text-muted-foreground" /> : null}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -337,40 +317,29 @@ export function AppSidebar({
                         {item.items!.map((subItem, i) => {
                           if (subItem.customRender) {
                             return (
-                              <SidebarMenuSubItem
-                                key={`custom-${item.title}-${i}`}
-                              >
+                              <SidebarMenuSubItem key={`custom-${item.title}-${i}`}>
                                 {subItem.customRender()}
                               </SidebarMenuSubItem>
                             );
                           }
                           if (subItem.isButton) {
                             return (
-                              <SidebarMenuSubItem
-                                key={subItem.title ?? `btn-${i}`}
-                              >
+                              <SidebarMenuSubItem key={subItem.title ?? `btn-${i}`}>
                                 <Button
                                   variant="outline"
                                   className="w-full justify-start"
                                   onClick={() => handleAction(subItem)}
                                 >
-                                  {subItem.icon && (
-                                    <subItem.icon className="mr-2 h-4 w-4" />
-                                  )}
+                                  {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
                                   {subItem.title}
                                 </Button>
                               </SidebarMenuSubItem>
                             );
                           }
                           return (
-                            <SidebarMenuSubItem
-                              key={subItem.title ?? `itm-${i}`}
-                            >
+                            <SidebarMenuSubItem key={subItem.title ?? `itm-${i}`}>
                               <SidebarMenuSubButton asChild>
-                                <Link
-                                  href={subItem.url ?? "#"}
-                                  className="flex items-center gap-2"
-                                >
+                                <Link href={subItem.url ?? "#"} className="flex items-center gap-2">
                                   {subItem.icon && (
                                     <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                   )}
