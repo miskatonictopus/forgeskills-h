@@ -1,4 +1,5 @@
 import { AsignaturaNameHydrator } from "@/components/asignaturas/AsignaturaNameHydrator";
+import { RelacionCursosPanel } from "@/components/asignaturas/RelacionCursosPanel";
 import { getAsignaturaByCodigoServer } from "@/data/asignaturas.server";
 import { getRAyCEByAsignaturaServer } from "@/data/ra_ce.server";
 import {
@@ -176,7 +177,11 @@ export default async function Page({ params }: Props) {
         </section>
 
         {/* espacio 4 columnas para futuros widgets */}
-        <aside className="col-span-12 lg:col-span-4 space-y-4" />
+        <aside className="col-span-12 lg:col-span-4">
+  {asg?.asignatura_id && (
+    <RelacionCursosPanel asignaturaId={asg.asignatura_id} />
+  )}
+</aside>
       </div>
     </main>
   );
