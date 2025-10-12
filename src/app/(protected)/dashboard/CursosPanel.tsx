@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 /* ========= Campos ========= */
-
 const cursoFields: ReadonlyArray<FieldConfig> = [
   { name: "acronimo", label: "Acrónimo", type: "text", required: true, placeholder: "SMX / ASIX / DAM / DAW" },
   { name: "nombre",   label: "Nombre",   type: "text", required: true, placeholder: "Sistemas Microinformáticos y Redes" },
@@ -34,26 +33,47 @@ export default function CursosPanel() {
   const [openCurso, setOpenCurso] = React.useState(false);
   const [openAsignatura, setOpenAsignatura] = React.useState(false);
   const [cursoSeleccionado, setCursoSeleccionado] = React.useState<Curso | null>(null);
-
   const [cursos, setCursos] = React.useState<Curso[]>([]);
+  const [asignaturasPorCurso, setAsignaturasPorCurso] = React.useState<Record<string, any[]>>({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const supabase = supabaseBrowser();
+
+  /* ========= Cargar cursos ========= */
   const refetch = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const rows = await listarCursos();
       setCursos(rows);
+
+      // 🔹 Por cada curso, traer asignaturas relacionadas
+      const asigMap: Record<string, any[]> = {};
+      for (const c of rows) {
+        const { data: asigs, error } = await supabase
+          .from("curso_asignaturas")
+          .select(`
+            asignatura_id,
+            asignaturas!inner (
+              codigo,
+              nombre
+            )
+          `)
+          .eq("curso_id", c.id);
+
+        if (error) console.error("Error obteniendo asignaturas de", c.acronimo, error);
+        asigMap[c.id] = asigs?.map((a) => a.asignaturas) ?? [];
+      }
+      setAsignaturasPorCurso(asigMap);
     } catch (e: unknown) {
-      const message =
-        e instanceof Error ? e.message : typeof e === "string" ? e : "No se pudo cargar cursos.";
+      const msg = e instanceof Error ? e.message : String(e);
       console.error(e);
-      setError(message);
+      setError(msg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   React.useEffect(() => { void refetch(); }, [refetch]);
 
@@ -82,7 +102,7 @@ export default function CursosPanel() {
       return;
     }
 
-    // 1) Importar en backend: crea la asignatura (si no existe) e inserta RA/CE
+    // 1️⃣ Importar desde el JSON remoto
     const res = await fetch("/api/asignaturas/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,33 +114,37 @@ export default function CursosPanel() {
       return;
     }
 
-    // 2) Vincular a curso en tabla curso_asignaturas
-    const supabase = supabaseBrowser();
-    // Recuperar id de la asignatura recién importada por nombre (el endpoint devuelve 'asignatura' = nombre)
+    // 2️⃣ Vincularla al curso
     const { data: asig, error: selErr } = await supabase
       .from("asignaturas")
-      .select("id")
+      .select("id_uuid")
       .eq("nombre", data.asignatura)
       .maybeSingle();
 
-    if (selErr || !asig?.id) {
+    if (selErr || !asig?.id_uuid) {
       console.error(selErr);
-      toast.error("Asignatura importada, pero no pude recuperarla para vincularla al curso.");
+      toast.error("Asignatura importada, pero no se pudo vincular al curso.");
       return;
     }
 
-    // Insert relación (ignora duplicado si ya existía)
     const { error: relErr } = await supabase
-  .from("curso_asignaturas")
-  .upsert(
-    { curso_id: cursoSeleccionado.id, asignatura_id: asig.id },
-    { onConflict: "curso_id,asignatura_id" }
-  );
+      .from("curso_asignaturas")
+      .upsert(
+        { curso_id: cursoSeleccionado.id, asignatura_id: asig.id_uuid },
+        { onConflict: "curso_id,asignatura_id" }
+      );
 
-    toast.success(`"${data.asignatura}" importada (RA/CE) y vinculada a ${cursoSeleccionado.acronimo}.`);
+    if (relErr) {
+      toast.error("Error al vincular asignatura: " + relErr.message);
+      return;
+    }
+
+    toast.success(`"${data.asignatura}" vinculada a ${cursoSeleccionado.acronimo}.`);
     setOpenAsignatura(false);
+    await refetch();
   };
 
+  /* ========= Render ========= */
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
@@ -128,57 +152,64 @@ export default function CursosPanel() {
       </div>
 
       {loading && <p>Cargando cursos…</p>}
-      {error && (
-        <p className="text-sm text-red-500">
-          {error} — revisa la consola del navegador para más detalle.
-        </p>
-      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {!loading && !error && cursos.length === 0 && (
-        <p>No hay cursos en la base de datos.</p>
-      )}
-
-      {!loading && !error && cursos.length > 0 && (
-        <ul className="space-y-2">
-          {cursos.map((c: Curso) => (
-            <li key={c.id} className="rounded-md border p-3">
-              <div className="flex items-center justify-between gap-2">
+      {!loading && cursos.length > 0 && (
+        <ul className="space-y-4">
+          {cursos.map((c) => (
+            <li key={c.id} className="rounded-lg border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between">
                 <div>
-                  <b>{c.acronimo}</b> — {c.nombre}
-                  <span className="text-sm text-muted-foreground">
-                    {" "} (Nivel {c.nivel}, {c.grado})
-                  </span>
+                  <h3 className="text-xl font-bold">
+                    {c.acronimo}{c.nivel}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{c.nombre}</p>
+                  <p className="text-xs uppercase text-muted-foreground">{c.grado}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setCursoSeleccionado(c);
-                      setOpenAsignatura(true);
-                    }}
-                  >
-                    + Añadir asignatura
-                  </Button>
-                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setCursoSeleccionado(c);
+                    setOpenAsignatura(true);
+                  }}
+                >
+                  + Añadir asignatura
+                </Button>
+              </div>
+
+              {/* 🔹 Asignaturas del curso */}
+              <div className="mt-3 border-t pt-2">
+                {asignaturasPorCurso[c.id]?.length ? (
+                  <ul className="ml-3 list-disc text-sm">
+                    {asignaturasPorCurso[c.id].map((a) => (
+                      <li key={a.codigo}>
+                        <b>{a.codigo}</b> — {a.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-red-400 mt-1">
+                    ⚠️ Este curso no tiene asignaturas relacionadas todavía.
+                  </p>
+                )}
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Dialogo: crear curso */}
+      {/* Diálogos */}
       <EntityCreateDialog
         open={openCurso}
         onOpenChange={setOpenCurso}
         title="Nuevo curso"
-        description="Guarda un curso en la BD local (Supabase Docker)."
+        description="Guarda un curso en la BD local."
         fields={cursoFields}
         submitLabel="Guardar curso"
         loadingText="Guardando..."
         onSubmit={handleSubmitCurso}
       />
 
-      {/* Dialogo: crear asignatura (import RA/CE) */}
       <EntityCreateDialog
         open={openAsignatura}
         onOpenChange={setOpenAsignatura}
