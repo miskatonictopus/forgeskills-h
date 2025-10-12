@@ -1,52 +1,35 @@
 import { AsignaturaNameHydrator } from "@/components/asignaturas/AsignaturaNameHydrator";
 import { RelacionCursosPanel } from "@/components/asignaturas/RelacionCursosPanel";
+import { AsociarCursoButtonWrapper } from "@/components/asignaturas/AsociarCursoButtonWrapper"; // 👈 NUEVO
 import { getAsignaturaByCodigoServer } from "@/data/asignaturas.server";
 import { getRAyCEByAsignaturaServer } from "@/data/ra_ce.server";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import * as React from "react";
 
-type Props = {
-  params: Promise<{ codigo: string }>;
-};
+export const dynamic = "force-dynamic";   // 👈 evita caché de la ruta
+export const revalidate = 0;              // 👈 (opcional) cero revalidación
+
+type Props = { params: { codigo: string } };
 
 export default async function Page({ params }: Props) {
-  const { codigo } = await params;
+  const { codigo } = params;
 
-  // === Carga de datos ===
   let asg: Awaited<ReturnType<typeof getAsignaturaByCodigoServer>> | null = null;
-  try {
-    asg = await getAsignaturaByCodigoServer(codigo);
-  } catch {
-    // swallow
-  }
+  try { asg = await getAsignaturaByCodigoServer(codigo); } catch {}
 
   let raList: Awaited<ReturnType<typeof getRAyCEByAsignaturaServer>> = [];
   if (asg?.asignatura_id) {
-    raList = await getRAyCEByAsignaturaServer(asg.asignatura_id);
+    try { raList = await getRAyCEByAsignaturaServer(asg.asignatura_id); } catch {}
   }
 
-  // === Métricas (Duración, nº RA, nº CE) ===
   const rawDescripcion = (asg as any)?.descripcion;
   let descripcion: any = null;
   if (rawDescripcion) {
-    try {
-      descripcion =
-        typeof rawDescripcion === "string"
-          ? JSON.parse(rawDescripcion)
-          : rawDescripcion;
-    } catch {
-      descripcion = null;
-    }
+    try { descripcion = typeof rawDescripcion === "string" ? JSON.parse(rawDescripcion) : rawDescripcion; } catch {}
   }
 
-  // ✅ única mejora: detecta tanto descripcion.duracion como columna duracion directa
   const duracionRaw =
     descripcion?.duracion ??
     (asg as any)?.duracion ??
@@ -55,115 +38,90 @@ export default async function Page({ params }: Props) {
     null;
 
   const duracion =
-    typeof duracionRaw === "number"
-      ? `${duracionRaw}h`
-      : typeof duracionRaw === "string"
-      ? duracionRaw
-      : null;
+    typeof duracionRaw === "number" ? `${duracionRaw}h` :
+    typeof duracionRaw === "string" ? duracionRaw : null;
 
-  const numRA = raList.length;
-  const numCE = raList.reduce(
-    (acc, ra: any) => acc + (ra?.criterios_evaluacion?.length ?? 0),
-    0
-  );
+  const numRA = Array.isArray(raList) ? raList.length : 0;
+  const numCE = Array.isArray(raList)
+    ? raList.reduce((acc: number, ra: any) => acc + (Array.isArray(ra?.criterios_evaluacion) ? ra.criterios_evaluacion.length : 0), 0)
+    : 0;
 
   return (
     <main className="p-4">
       {/* cabecera */}
-      <h1 className="text-4xl font-bold flex items-center gap-3 text-foreground mb-2">
+      <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold text-foreground">
         <span>{codigo}</span>
         {asg?.nombre ? (
-          <span className="text-foreground font-bold text-3xl">
-            {asg.nombre}
-          </span>
+          <span className="text-3xl font-bold text-foreground">{asg.nombre}</span>
         ) : (
           <AsignaturaNameHydrator codigo={codigo} />
         )}
       </h1>
 
-      {/* barra de métricas bajo el nombre */}
+      {/* métricas */}
       <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         {duracion && (
-          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
-            <span className="text-foreground text-xs">Duración</span>
-            <span className="font-bold text-foreground text-2xl">{duracion}</span>
+          <span className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1">
+            <span className="text-xs text-foreground">Duración</span>
+            <span className="text-2xl font-bold text-foreground">{duracion}</span>
           </span>
         )}
-        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
-          <span className="text-foreground text-xs">RA</span>
-          <span className="font-bold text-foreground text-2xl">{numRA}</span>
+        <span className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1">
+          <span className="text-xs text-foreground">RA</span>
+          <span className="text-2xl font-bold text-foreground">{numRA}</span>
         </span>
-        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
-          <span className="text-foreground text-xs">CE</span>
-          <span className="font-bold text-foreground text-2xl">{numCE}</span>
+        <span className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1">
+          <span className="text-xs text-foreground">CE</span>
+          <span className="text-2xl font-bold text-foreground">{numCE}</span>
         </span>
       </div>
 
-      {/* layout 12 cols; la tabla ocupa 8 */}
       <div className="grid grid-cols-12 gap-6">
+        {/* tabla */}
         <section
-          className="col-span-12 lg:col-span-8 rounded-xl border bg-card text-card-foreground"
+          className="col-span-12 rounded-xl border bg-card text-card-foreground lg:col-span-8"
           aria-labelledby="ra-ce-title"
         >
-          <div className="px-4 py-3 border-b">
+          <div className="border-b px-4 py-3">
             <h2 id="ra-ce-title" className="text-xl font-semibold">
               Resultados de Aprendizaje y Criterios de Evaluación
             </h2>
           </div>
 
-          <div className="p-4 overflow-x-auto">
-            {raList.length === 0 ? (
-              <p className="text-muted-foreground">
-                No se encontraron RA ni CE para esta asignatura.
-              </p>
+          <div className="overflow-x-auto p-4">
+            {numRA === 0 ? (
+              <p className="text-muted-foreground">No se encontraron RA ni CE para esta asignatura.</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[18%] text-muted-foreground">
-                      CE
-                    </TableHead>
-                    <TableHead className="text-muted-foreground">
-                      Descripción CE
-                    </TableHead>
+                    <TableHead className="w-[18%] text-muted-foreground">CE</TableHead>
+                    <TableHead className="text-muted-foreground">Descripción CE</TableHead>
                   </TableRow>
                 </TableHeader>
-
                 <TableBody>
                   {raList.map((ra: any) => (
-                    <React.Fragment key={ra.id}>
-                      {/* Fila cabecera del RA ocupando toda la anchura */}
+                    <React.Fragment key={ra.id ?? ra.codigo}>
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableCell colSpan={2} className="py-3">
-                          <div className="flex gap-3 items-start">
-                            <span className="font-bold whitespace-nowrap">
-                              RA {ra.codigo}
-                            </span>
+                          <div className="flex items-start gap-3">
+                            <span className="whitespace-nowrap font-bold">RA {ra.codigo}</span>
                             <span className="text-sm text-muted-foreground">
-                              {ra.descripcion || ra.titulo}
+                              {ra.descripcion || ra.titulo || "Sin descripción"}
                             </span>
                           </div>
                         </TableCell>
                       </TableRow>
-
-                      {/* CE del RA */}
-                      {(ra.criterios_evaluacion?.length ?? 0) > 0 ? (
-                        ra.criterios_evaluacion!.map((ce: any) => (
-                          <TableRow key={ce.id}>
-                            <TableCell className="font-mono align-top">
-                              {ce.codigo}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {ce.descripcion}
-                            </TableCell>
+                      {Array.isArray(ra.criterios_evaluacion) && ra.criterios_evaluacion.length > 0 ? (
+                        ra.criterios_evaluacion.map((ce: any) => (
+                          <TableRow key={ce.id ?? ce.codigo}>
+                            <TableCell className="align-top font-mono">{ce.codigo}</TableCell>
+                            <TableCell className="text-sm">{ce.descripcion}</TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell
-                            colSpan={2}
-                            className="italic text-muted-foreground"
-                          >
+                          <TableCell colSpan={2} className="italic text-muted-foreground">
                             Sin criterios definidos
                           </TableCell>
                         </TableRow>
@@ -176,12 +134,18 @@ export default async function Page({ params }: Props) {
           </div>
         </section>
 
-        {/* espacio 4 columnas para futuros widgets */}
-        <aside className="col-span-12 lg:col-span-4">
-  {asg?.asignatura_id && (
-    <RelacionCursosPanel asignaturaId={asg.asignatura_id} />
-  )}
-</aside>
+        {/* panel derecho */}
+        <aside className="col-span-12 lg:col-span-4 space-y-3">
+          {asg?.asignatura_id && (
+            <>
+              {/* 👉 Botón nuevo arriba (client) */}
+              <AsociarCursoButtonWrapper asignaturaId={asg.asignatura_id} />
+
+              {/* 👉 Panel con la lista (server) */}
+              <RelacionCursosPanel asignaturaId={asg.asignatura_id} />
+            </>
+          )}
+        </aside>
       </div>
     </main>
   );
