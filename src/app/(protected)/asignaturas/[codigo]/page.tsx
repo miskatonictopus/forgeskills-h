@@ -83,18 +83,18 @@ export default async function Page({ params }: Props) {
       {/* barra de métricas bajo el nombre */}
       <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         {duracion && (
-          <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 bg-card">
-            <span className="font-medium text-foreground">Duración</span>
-            <span className="font-mono">{duracion}</span>
+          <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
+            <span className="text-foreground text-xs">Duración</span>
+            <span className="font-bold text-foreground text-2xl">{duracion}</span>
           </span>
         )}
-        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 bg-card">
-          <span className="font-medium text-foreground">RA</span>
-          <span className="font-mono">{numRA}</span>
+        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
+          <span className="text-foreground text-xs">RA</span>
+          <span className="font-bold text-foreground text-2xl">{numRA}</span>
         </span>
-        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1 bg-card">
-          <span className="font-medium text-foreground">CE</span>
-          <span className="font-mono">{numCE}</span>
+        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1 bg-card">
+          <span className="text-foreground text-xs">CE</span>
+          <span className="font-bold text-foreground text-2xl">{numCE}</span>
         </span>
       </div>
 
