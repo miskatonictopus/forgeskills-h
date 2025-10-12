@@ -1,33 +1,48 @@
 import { AsignaturaNameHydrator } from "@/components/asignaturas/AsignaturaNameHydrator";
-import { RelacionCursosPanel } from "@/components/asignaturas/RelacionCursosPanel";
-import { AsociarCursoButtonWrapper } from "@/components/asignaturas/AsociarCursoButtonWrapper"; // 👈 NUEVO
+import { AsociarCursoButtonWrapper } from "@/components/asignaturas/AsociarCursoButtonWrapper";
+import { RAyCEConCursosTable } from "@/components/asignaturas/RAyCEConCursosTable";
+import { getCursosRelacionados } from "@/data/cursos_relacionados.server";
 import { getAsignaturaByCodigoServer } from "@/data/asignaturas.server";
 import { getRAyCEByAsignaturaServer } from "@/data/ra_ce.server";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 import * as React from "react";
 
-export const dynamic = "force-dynamic";   // 👈 evita caché de la ruta
-export const revalidate = 0;              // 👈 (opcional) cero revalidación
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = { params: { codigo: string } };
 
 export default async function Page({ params }: Props) {
   const { codigo } = params;
 
+  // --- Carga asignatura ---
   let asg: Awaited<ReturnType<typeof getAsignaturaByCodigoServer>> | null = null;
-  try { asg = await getAsignaturaByCodigoServer(codigo); } catch {}
+  try {
+    asg = await getAsignaturaByCodigoServer(codigo);
+  } catch {}
 
+  // --- Carga RA/CE ---
   let raList: Awaited<ReturnType<typeof getRAyCEByAsignaturaServer>> = [];
   if (asg?.asignatura_id) {
-    try { raList = await getRAyCEByAsignaturaServer(asg.asignatura_id); } catch {}
+    try {
+      raList = await getRAyCEByAsignaturaServer(asg.asignatura_id);
+    } catch {}
   }
 
+  // --- Carga cursos relacionados (columnas) ---
+  const cursos = asg?.asignatura_id
+    ? await getCursosRelacionados(asg.asignatura_id)
+    : [];
+
+  // --- Métricas header ---
   const rawDescripcion = (asg as any)?.descripcion;
   let descripcion: any = null;
   if (rawDescripcion) {
-    try { descripcion = typeof rawDescripcion === "string" ? JSON.parse(rawDescripcion) : rawDescripcion; } catch {}
+    try {
+      descripcion =
+        typeof rawDescripcion === "string"
+          ? JSON.parse(rawDescripcion)
+          : rawDescripcion;
+    } catch {}
   }
 
   const duracionRaw =
@@ -38,12 +53,22 @@ export default async function Page({ params }: Props) {
     null;
 
   const duracion =
-    typeof duracionRaw === "number" ? `${duracionRaw}h` :
-    typeof duracionRaw === "string" ? duracionRaw : null;
+    typeof duracionRaw === "number"
+      ? `${duracionRaw}h`
+      : typeof duracionRaw === "string"
+      ? duracionRaw
+      : null;
 
   const numRA = Array.isArray(raList) ? raList.length : 0;
   const numCE = Array.isArray(raList)
-    ? raList.reduce((acc: number, ra: any) => acc + (Array.isArray(ra?.criterios_evaluacion) ? ra.criterios_evaluacion.length : 0), 0)
+    ? raList.reduce(
+        (acc: number, ra: any) =>
+          acc +
+          (Array.isArray(ra?.criterios_evaluacion)
+            ? ra.criterios_evaluacion.length
+            : 0),
+        0
+      )
     : 0;
 
   return (
@@ -77,9 +102,9 @@ export default async function Page({ params }: Props) {
       </div>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* tabla */}
+        {/* Tabla RA/CE con columnas de cursos */}
         <section
-          className="col-span-12 rounded-xl border bg-card text-card-foreground lg:col-span-8"
+          className="col-span-12 rounded-xl border bg-card text-card-foreground lg:col-span-9"
           aria-labelledby="ra-ce-title"
         >
           <div className="border-b px-4 py-3">
@@ -88,62 +113,21 @@ export default async function Page({ params }: Props) {
             </h2>
           </div>
 
-          <div className="overflow-x-auto p-4">
+          <div className="p-4">
             {numRA === 0 ? (
-              <p className="text-muted-foreground">No se encontraron RA ni CE para esta asignatura.</p>
+              <p className="text-muted-foreground">
+                No se encontraron RA ni CE para esta asignatura.
+              </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[18%] text-muted-foreground">CE</TableHead>
-                    <TableHead className="text-muted-foreground">Descripción CE</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {raList.map((ra: any) => (
-                    <React.Fragment key={ra.id ?? ra.codigo}>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40">
-                        <TableCell colSpan={2} className="py-3">
-                          <div className="flex items-start gap-3">
-                            <span className="whitespace-nowrap font-bold">RA {ra.codigo}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {ra.descripcion || ra.titulo || "Sin descripción"}
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {Array.isArray(ra.criterios_evaluacion) && ra.criterios_evaluacion.length > 0 ? (
-                        ra.criterios_evaluacion.map((ce: any) => (
-                          <TableRow key={ce.id ?? ce.codigo}>
-                            <TableCell className="align-top font-mono">{ce.codigo}</TableCell>
-                            <TableCell className="text-sm">{ce.descripcion}</TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={2} className="italic text-muted-foreground">
-                            Sin criterios definidos
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
+              <RAyCEConCursosTable raList={raList as any} cursos={cursos as any} />
             )}
           </div>
         </section>
 
-        {/* panel derecho */}
-        <aside className="col-span-12 lg:col-span-4 space-y-3">
+        {/* Lateral: acciones */}
+        <aside className="col-span-12 space-y-3 lg:col-span-3">
           {asg?.asignatura_id && (
-            <>
-              {/* 👉 Botón nuevo arriba (client) */}
-              <AsociarCursoButtonWrapper asignaturaId={asg.asignatura_id} />
-
-              {/* 👉 Panel con la lista (server) */}
-              <RelacionCursosPanel asignaturaId={asg.asignatura_id} />
-            </>
+            <AsociarCursoButtonWrapper asignaturaId={asg.asignatura_id} />
           )}
         </aside>
       </div>
