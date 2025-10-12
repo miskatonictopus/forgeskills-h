@@ -103,7 +103,13 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
 
   const codAsignatura = String(asignatura?.codigo ?? asignatura?.id ?? "").trim();
 
-  // Upsert asignatura
+  // ⏩ Campos adicionales a importar
+  const duracion = asignatura?.duracion ?? null;
+  const horas = asignatura?.horas ?? null;
+  const horas_totales = asignatura?.horas_totales ?? null;
+  const descripcion = asignatura?.descripcion ?? null;
+
+  // === UPSERT asignatura ===
   let asignaturaId: string | undefined;
   if (codAsignatura) {
     const { data: exByCode, error: errByCode } = await supabase
@@ -115,7 +121,21 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
 
     if (exByCode?.id) {
       asignaturaId = exByCode.id as string;
+
+      // ✅ Si ya existe, actualizamos nombre/duración/horas
+      const { error: updateErr } = await supabase
+        .from("asignaturas")
+        .update({
+          nombre: asignatura.nombre,
+          duracion,
+          horas,
+          horas_totales,
+          descripcion,
+        })
+        .eq("id", asignaturaId);
+      if (updateErr) throw new Error(`update-asig: ${updateErr.message}`);
     } else {
+      // ✅ Si no existe, insertamos con duración y horas
       const { data: nueva, error: errIns } = await supabase
         .from("asignaturas")
         .insert({
@@ -123,6 +143,10 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
           codigo: codAsignatura || null,
           nombre: asignatura.nombre,
           color: "#A3E635",
+          duracion,
+          horas,
+          horas_totales,
+          descripcion,
         })
         .select("id")
         .single();
@@ -140,6 +164,18 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
 
     if (existente?.id) {
       asignaturaId = existente.id as string;
+
+      // ✅ también actualizamos si existe
+      const { error: updateErr } = await supabase
+        .from("asignaturas")
+        .update({
+          duracion,
+          horas,
+          horas_totales,
+          descripcion,
+        })
+        .eq("id", asignaturaId);
+      if (updateErr) throw new Error(`update-asig(name): ${updateErr.message}`);
     } else {
       const { data: nueva, error: errIns } = await supabase
         .from("asignaturas")
@@ -147,15 +183,19 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
           id: crypto.randomUUID(),
           nombre: asignatura.nombre,
           color: "#A3E635",
+          duracion,
+          horas,
+          horas_totales,
+          descripcion,
         })
         .select("id")
         .single();
-      if (errIns) throw new Error(`insert-asig: ${errIns.message}`);
+      if (errIns) throw new Error(`insert-asig(name): ${errIns.message}`);
       asignaturaId = nueva!.id as string;
     }
   }
 
-  // RAs y CEs
+  // === RAs y CEs ===
   let insertedRA = 0;
   let insertedCE = 0;
 
@@ -221,10 +261,12 @@ async function upsertAsignaturaConRACE(asignatura: AnyObj) {
     ok: true,
     asignatura: asignatura.nombre,
     codigo: codAsignatura || null,
+    duracion,
     insertedRA,
     insertedCE,
   };
 }
+
 
 export async function POST(req: Request) {
   let where = "start";

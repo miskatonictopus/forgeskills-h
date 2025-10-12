@@ -1,12 +1,15 @@
-// src/data/asignaturas.server.ts
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type AsignaturaSSR = {
-  asignatura_id: string;   // UUID real (para joins RA/CE)
-  codigo: string | null;   // p.ej. "1665"
+  asignatura_id: string; // UUID real (para joins RA/CE)
+  codigo: string | null; // p.ej. "1665"
   nombre: string;
   color?: string | null;
+  duracion?: string | number | null;
+  horas?: number | null;
+  horas_totales?: number | null;
+  descripcion?: any;
 };
 
 const normCodigo = (s: string) =>
@@ -15,13 +18,25 @@ const normCodigo = (s: string) =>
 export async function getAsignaturaByCodigoServer(codigoInput: string) {
   const codigo = normCodigo(codigoInput);
 
-  // Si tienes una vista que expone el UUID real, úsala:
-  // Asegúrate de que la vista tenga una columna 'asignatura_id' (UUID)
-  const { data: vData } = await supabaseAdmin
+  // 1️⃣ Primero intentamos desde la vista "asignaturas_dashboard"
+  const { data: vData, error: vError } = await supabaseAdmin
     .from("asignaturas_dashboard")
-    .select("asignatura_id, codigo, nombre, color")
+    .select(
+      `
+      asignatura_id,
+      codigo,
+      nombre,
+      color,
+      duracion,
+      horas,
+      horas_totales,
+      descripcion
+      `
+    )
     .eq("codigo", codigo)
     .maybeSingle();
+
+  if (vError) console.warn("⚠️ Error en vista asignaturas_dashboard:", vError.message);
 
   if (vData) {
     return {
@@ -29,13 +44,28 @@ export async function getAsignaturaByCodigoServer(codigoInput: string) {
       codigo: vData.codigo,
       nombre: vData.nombre,
       color: vData.color,
+      duracion: vData.duracion,
+      horas: vData.horas,
+      horas_totales: vData.horas_totales,
+      descripcion: vData.descripcion,
     } as AsignaturaSSR;
   }
 
-  // Tabla base
+  // 2️⃣ Fallback a la tabla base "asignaturas"
   const { data, error } = await supabaseAdmin
     .from("asignaturas")
-    .select("id, codigo, nombre, color")
+    .select(
+      `
+      id,
+      codigo,
+      nombre,
+      color,
+      duracion,
+      horas,
+      horas_totales,
+      descripcion
+      `
+    )
     .eq("codigo", codigo)
     .maybeSingle();
 
@@ -47,5 +77,9 @@ export async function getAsignaturaByCodigoServer(codigoInput: string) {
     codigo: data.codigo,
     nombre: data.nombre,
     color: data.color,
+    duracion: data.duracion,
+    horas: data.horas,
+    horas_totales: data.horas_totales,
+    descripcion: data.descripcion,
   } as AsignaturaSSR;
 }
