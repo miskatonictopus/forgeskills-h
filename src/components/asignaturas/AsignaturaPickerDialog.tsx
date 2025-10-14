@@ -2,7 +2,11 @@
 
 import * as React from "react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,39 +14,53 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 
+// ==== Tipos y helpers ==== //
 type AsignaturaJson = Record<string, unknown>;
 
 export type AsignaturaItem = {
   id: string;
   nombre: string;
+  color?: string | null;
   raw?: AsignaturaJson;
 };
 
-type Props = {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  onConfirm: (seleccionadas: AsignaturaItem[]) => void;
-  /** URL del JSON remoto */
-  sourceUrl?: string;
-};
-
-// Helper seguro para extraer strings
 function str(v: unknown): string | undefined {
   if (v === null || v === undefined) return undefined;
   const s = String(v).trim();
   return s.length ? s : undefined;
 }
 
-/** Extrae id/nombre de forma tolerante a distintos esquemas */
+function colorOf(v: unknown): string | undefined {
+  if (!v) return undefined;
+  const s = String(v).trim();
+  return s ? s : undefined;
+}
+
+/** Extrae id/nombre y color de forma tolerante a distintos esquemas */
 function mapAsignatura(a: AsignaturaJson): AsignaturaItem | null {
   const id =
     str(a.id) ?? str(a.codigo) ?? str(a.code) ?? str(a.clave) ?? str(a.cod);
   const nombre =
     str(a.nombre) ?? str(a.name) ?? str(a.titulo) ?? str(a.title);
   if (!id || !nombre) return null;
-  return { id, nombre, raw: a };
+
+  const color =
+    colorOf((a as any).color) ??
+    colorOf((a as any).hex) ??
+    colorOf((a as any).bgColor);
+
+  return { id, nombre, color: color ?? null, raw: a };
 }
 
+// ==== Props del diálogo ==== //
+type Props = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onConfirm: (seleccionadas: AsignaturaItem[]) => void;
+  sourceUrl?: string; // URL del JSON remoto
+};
+
+// ==== Componente principal ==== //
 export function AsignaturaPickerDialog({
   open,
   onOpenChange,
@@ -60,12 +78,10 @@ export function AsignaturaPickerDialog({
     fetch(sourceUrl)
       .then((r) => r.json())
       .then((json: unknown) => {
-        // Normalizamos a lista de unknown
         const itemsUnknown: unknown[] = Array.isArray(json)
           ? (json as unknown[])
           : Object.values((json ?? {}) as Record<string, unknown>);
 
-        // Convertimos unknown -> AsignaturaJson dentro del map
         const arr: AsignaturaItem[] = itemsUnknown
           .map((v) => mapAsignatura((v ?? {}) as AsignaturaJson))
           .filter((x): x is AsignaturaItem => Boolean(x));
@@ -81,7 +97,8 @@ export function AsignaturaPickerDialog({
     if (!s) return data;
     return data.filter(
       (a) =>
-        a.id.toLowerCase().includes(s) || a.nombre.toLowerCase().includes(s)
+        a.id.toLowerCase().includes(s) ||
+        a.nombre.toLowerCase().includes(s)
     );
   }, [q, data]);
 
@@ -157,3 +174,6 @@ export function AsignaturaPickerDialog({
     </Dialog>
   );
 }
+
+// Export por defecto opcional (para compatibilidad)
+export default AsignaturaPickerDialog;

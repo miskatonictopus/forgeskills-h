@@ -1,21 +1,34 @@
 // app/(protected)/asignaturas/page.tsx
-import * as React from "react";
-import { AsignaturasGrid } from "@/components/dashboard/AsignaturasGrid"; // ajusta la ruta si está en otro sitio
-import { Separator } from "@/components/ui/separator";
+import AsignaturasGrid from "@/components/dashboard/AsignaturasGrid";
+import { supabaseServer } from "@/lib/supabaseServer";
 
-export const metadata = {
-  title: "Mis asignaturas",
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function AsignaturasIndexPage() {
+export default async function AsignaturasIndexPage() {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("asignaturas")
+    .select("id,codigo,nombre,color")
+    .order("codigo", { ascending: true });
+
+  if (error) {
+    console.error("asignaturas.page supabase error:", error);
+  }
+
+  // adapta el shape si tu Grid lo espera distinto
+  const items =
+    (data ?? []).map((a) => ({
+      id: String(a.id),
+      nombre: a.nombre,
+      codigo: a.codigo,
+      color: a.color,
+    })) ?? [];
+
   return (
-    <div className="p-6 md:p-8">
-      <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Asignaturas</h1>
-      <p className="text-muted-foreground mt-2">
-        Todas tus asignaturas. Haz clic en una para ver su detalle.
-      </p>
-      <Separator className="my-6" />
-      <AsignaturasGrid />
-    </div>
+    <main className="p-4 space-y-4">
+      <h1 className="text-2xl font-bold">Asignaturas</h1>
+      <AsignaturasGrid data={items} />
+    </main>
   );
 }

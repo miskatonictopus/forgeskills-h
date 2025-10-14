@@ -6,47 +6,24 @@ import {
   AsignaturaPickerDialog,
   type AsignaturaItem,
 } from "@/components/asignaturas/AsignaturaPickerDialog";
-import { SelectCursoDialog } from "@/components/asignaturas/SelectCursoDialog";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Minus,
-  Plus,
-  LayoutDashboard,
-  GraduationCap,
-  BookUser,
-  ChartSpline,
-  File,
-  PenLine,
-  Flag,
-  CalendarDays,
-  Settings,
-  CircleUserRound,
-  CirclePlus,
-  Presentation,
-  UserRound,
+  Minus, Plus, LayoutDashboard, GraduationCap, BookUser, ChartSpline, File,
+  PenLine, Flag, CalendarDays, Settings, CircleUserRound, CirclePlus,
+  Presentation, UserRound,
 } from "lucide-react";
 import { ForgeSkillsLogo } from "@/components/ForgeSkillsLogo";
 import { SearchForm } from "@/components/search-form";
 import { Button } from "@/components/ui/button";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
+  Sidebar, SidebarContent, SidebarGroup, SidebarHeader, SidebarMenu,
+  SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
+  SidebarMenuSubItem, SidebarRail,
 } from "@/components/ui/sidebar";
 
 /* ========= Tipos ========= */
@@ -67,6 +44,13 @@ type NavItem = {
   url: string;
   icon?: React.ElementType;
   items?: NavSubItem[];
+};
+
+// Objeto normalizado que enviamos al endpoint
+type NormalizedAsignatura = {
+  codigo: string;
+  nombre: string;
+  color?: string | null;
 };
 
 /* ========= Datos ========= */
@@ -99,7 +83,7 @@ const data: { navMain: NavItem[] } = {
     {
       title: "Mis Asignaturas",
       icon: BookUser,
-      url: "/asignaturas", // ← coherente con el index que creaste en (protected)/asignaturas
+      url: "/asignaturas",
       items: [
         {
           title: "Añadir asignatura",
@@ -161,6 +145,24 @@ const data: { navMain: NavItem[] } = {
   ],
 };
 
+/* ========= Utils ========= */
+function isPostgrestError(e: unknown): e is PostgrestError {
+  return typeof e === "object" && e !== null && "message" in e && "code" in e;
+}
+
+/** Normaliza items del picker a {codigo, nombre, color?} (id del picker = código oficial). */
+function normalizePickerItems(items: AsignaturaItem[]): NormalizedAsignatura[] {
+  const map = new Map<string, AsignaturaItem>();
+  for (const a of items) map.set(String(a.id), a); // dedupe por código
+
+  return [...map.values()].map((a) => ({
+    codigo: String(a.id),
+    nombre: a.nombre ?? String(a.id),
+    // leemos color si el picker lo trae (no hace falta tocar el tipo importado)
+    color: (a as any).color ?? null,
+  }));
+}
+
 /* ========= Sidebar ========= */
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onAddCourse?: () => void;
@@ -175,102 +177,52 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const router = useRouter();
-
-  // Estado diálogos
   const [openAsignaturaPicker, setOpenAsignaturaPicker] = React.useState(false);
-  const [openSelectCurso, setOpenSelectCurso] = React.useState(false);
-  const [seleccionadas, setSeleccionadas] = React.useState<AsignaturaItem[]>([]);
 
-  function isPostgrestError(e: unknown): e is PostgrestError {
-    return typeof e === "object" && e !== null && "message" in e && "code" in e;
-  }
+  /** Asegura asignaturas (y RA/CE) en BD. No asocia a cursos. */
+  const ensureAsignaturasInDB = React.useCallback(async (items: AsignaturaItem[]) => {
+    const supabase = supabaseBrowser();
+    const normalized = normalizePickerItems(items);
 
-  // ✅ Memo: evita recrear la función y permite ponerla en deps sin warnings
-  const linkAsignaturasACurso = React.useCallback(
-    async (cursoId: string, asignaturas: AsignaturaItem[]) => {
-      try {
-        if (!cursoId || asignaturas.length === 0) return false;
-  
-        const supabase = supabaseBrowser();
-  
-        // 1) Deduplicar por id (por si el picker repite)
-        const uniques = Array.from(
-          new Map(asignaturas.map(a => [String(a.id), a])).values()
-        );
-  
-        // 2) Upsert curso_asignaturas
-        const rows = uniques.map((a) => ({
-          id: crypto.randomUUID(),                 // por si tu tabla no autogenera
-          curso_id: String(cursoId),
-          asignatura_id: String(a.id),
-          asignatura_nombre: String(a.nombre ?? ""),
-        }));
-  
-        const { data, error, status } = await supabase
-          .from("curso_asignaturas")
-          .upsert(rows, { onConflict: "curso_id,asignatura_id" })
-          .select();
-  
-        if (error) {
-          const base = { status };
-          if (isPostgrestError(error)) {
-            console.error("❌ Upsert curso_asignaturas FAILED:", {
-              ...base,
-              code: error.code,
-              message: error.message,
-              details: error.details ?? null,
-              hint: error.hint ?? null,
-            });
-          } else {
-            console.error("❌ Upsert curso_asignaturas FAILED (unknown error):", base);
-          }
-          return false;
-        }
-  
-        console.log(`✅ ${rows.length} asignatura(s) añadidas al curso ${cursoId}`);
-        console.log("🔎 Rows:", data);
-  
-        // 3) Importar asignaturas + RA/CE en segundo paso (server)
-        //    Crea/actualiza 'asignaturas' y asegura RA/CE desde el JSON si faltan
-        try {
-          await fetch("/api/asignaturas/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              items: uniques.map((a) => ({
-                id: String(a.id),
-                nombre: a.nombre ?? String(a.id),
-                // color: si quieres pasar el color inicial, añádelo aquí
-              })),
-            }),
-          });
-        } catch (e) {
-          console.error("⚠️ Import RA/CE failed:", e);
-          // no bloqueamos: el upsert del curso ya fue correcto
-        }
-  
-        return true;
-      } catch (e) {
-        console.error("linkAsignaturasACurso error:", e);
-        return false;
+    // 1) Import en server: crea/actualiza asignaturas (+ RA/CE si tu endpoint lo hace)
+    try {
+      const r = await fetch("/api/asignaturas/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: normalized }),
+      });
+      const payload = await r.json().catch(() => ({}));
+      if (!r.ok || payload?.ok === false) {
+        console.warn("⚠️ /api/asignaturas/import respondió error:", payload?.error ?? payload);
+      } else {
+        console.log(`✅ Importadas/actualizadas: ${payload?.count ?? 0}`);
       }
-    },
-    [] // 👈 memorizada; en el handler usa [seleccionadas, linkAsignaturasACurso]
-  );
-  
+    } catch (e) {
+      console.warn("⚠️ /api/asignaturas/import falló:", e);
+    }
 
-  // 1) Tras elegir asignaturas en el picker
-  const handleAsignaturasSeleccionadas = React.useCallback((items: AsignaturaItem[]) => {
-    setSeleccionadas(items);
-    setOpenSelectCurso(true);
+    // 2) (opcional) confirmar que existen en BD (puede fallar por RLS si no hay sesión)
+    try {
+      const codigos = normalized.map((n) => n.codigo);
+      await supabase
+        .from("asignaturas")
+        .select("id_uuid,codigo")
+        .in("codigo", codigos);
+    } catch (error) {
+      if (isPostgrestError(error)) {
+        console.error("❌ Select asignaturas tras import:", {
+          code: error.code, message: error.message, details: error.details,
+        });
+      }
+    }
   }, []);
 
-  // 2) Tras elegir el curso en el segundo diálogo
-  const handleCursoSeleccionado = React.useCallback(async (cursoId: string) => {
-    setOpenSelectCurso(false);
-    await linkAsignaturasACurso(cursoId, seleccionadas);
-    setSeleccionadas([]);
-  }, [seleccionadas, linkAsignaturasACurso]);
+  // Al confirmar selección: importar y refrescar UI
+  const handleAsignaturasSeleccionadas = React.useCallback(async (items: AsignaturaItem[]) => {
+    await ensureAsignaturasInDB(items);
+    router.refresh(); // refresca el dashboard/servidor para ver las nuevas tarjetas
+    // router.push("/asignaturas"); // alternativa si quieres navegar
+  }, [ensureAsignaturasInDB, router]);
 
   const handleAction = React.useCallback(
     (sub: NavSubItem) => {
@@ -280,7 +232,7 @@ export function AppSidebar({
       }
       if (sub.action === "addAsignatura") {
         if (onAddAsignatura) return onAddAsignatura();
-        setOpenAsignaturaPicker(true);
+        setOpenAsignaturaPicker(true); // ← abrimos el picker
         return;
       }
       if (sub.action === "addAlumno") {
@@ -389,17 +341,11 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      {/* DIALOGOS */}
+      {/* DIALOGO: solo Picker */}
       <AsignaturaPickerDialog
         open={openAsignaturaPicker}
         onOpenChange={setOpenAsignaturaPicker}
         onConfirm={handleAsignaturasSeleccionadas}
-      />
-
-      <SelectCursoDialog
-        open={openSelectCurso}
-        onOpenChange={setOpenSelectCurso}
-        onConfirm={handleCursoSeleccionado}
       />
 
       <SidebarRail />

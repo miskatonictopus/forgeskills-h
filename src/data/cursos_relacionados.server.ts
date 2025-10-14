@@ -1,37 +1,28 @@
 // src/data/cursos_relacionados.server.ts
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabaseServer } from "@/lib/supabaseServer";
+// si tienes este tipo branded:
+export type UUID = string & { readonly __brand: "uuid" };
 
-export async function getCursosRelacionados(asignaturaId: string) {
-  const supabase = supabaseAdmin as SupabaseClient;
+export async function getCursosRelacionados(asignaturaId: string | UUID) {
+  const sb = await supabaseServer();
+  const id = String(asignaturaId); // normalizamos a string
 
-  // 1) lee relaciones
-  const { data: rels, error: relErr } = await supabase
+  const { data, error } = await sb
     .from("curso_asignaturas")
-    .select("curso_id")
-    .eq("asignatura_id", asignaturaId);
+    .select("cursos:id_curso ( id, acronimo, nombre, nivel, grado )")
+    .eq("id_asignatura", id);
 
-  if (relErr) {
-    console.error("❌ curso_asignaturas error:", relErr.message);
-    return [];
-  }
+  if (error) throw error;
 
-  const ids = (rels ?? [])
-    .map((r: any) => r.curso_id)
-    .filter((v: any) => typeof v === "string" && v.length > 0);
+  // adapta al shape que uses
+  const cursos =
+    (data ?? []).map((row: any) => ({
+      id: row.cursos.id,
+      acronimo: row.cursos.acronimo,
+      nombre: row.cursos.nombre,
+      nivel: row.cursos.nivel,
+      grado: row.cursos.grado,
+    })) ?? [];
 
-  if (ids.length === 0) return [];
-
-  // 2) trae cursos por IN
-  const { data: cursos, error: cErr } = await supabase
-    .from("cursos")
-    .select("id, acronimo, nombre, nivel, grado")
-    .in("id", ids);
-
-  if (cErr) {
-    console.error("❌ cursos error:", cErr.message);
-    return [];
-  }
-
-  return cursos ?? [];
+  return cursos;
 }

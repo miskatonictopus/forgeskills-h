@@ -1,12 +1,14 @@
 // components/asignaturas/RAyCEConCursosTable.tsx
 import * as React from "react";
 
-type Curso = {
+/** 👇 Exporta el tipo para poder reutilizarlo en la página */
+export type CursoForTable = {
   id: string;
   acronimo: string;
   nombre: string;
-  nivel?: string | number | null;
-  grado?: string | null;
+  // ✅ con exactOptionalPropertyTypes, una opcional es T | undefined
+  nivel?: string | number | null | undefined;
+  grado?: string | null | undefined;
 };
 
 type CE = {
@@ -27,21 +29,15 @@ type Estado = "done" | "partial" | "pending";
 
 type Props = {
   raList: RA[];
-  cursos: Curso[];
-  /** Estado por CE y curso: { [ceId]: { [cursoId]: "done"|"partial"|"pending" } } */
+  cursos: CursoForTable[]; // 👈 usa el tipo exportado
   ceStates?: Record<string, Record<string, Estado>>;
-  /** (Opcional) Estado por RA y curso; si no se pasa, se calcula a partir de CE */
   raStates?: Record<string, Record<string, Estado>>;
 };
 
 function Pill({ state }: { state: Estado }) {
   const label = state === "done" ? "✓" : state === "partial" ? "…" : "";
   const title =
-    state === "done"
-      ? "Completado"
-      : state === "partial"
-      ? "En progreso"
-      : "Pendiente";
+    state === "done" ? "Completado" : state === "partial" ? "En progreso" : "Pendiente";
   const bg =
     state === "done"
       ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
@@ -80,21 +76,19 @@ export function RAyCEConCursosTable({
             <th className="w-[18%] border-b px-4 py-3 font-medium">CE</th>
             <th className="border-b px-4 py-3 font-medium">Descripción CE</th>
             {cursos.map((c) => (
-  <th key={c.id} className="border-b px-2 py-3 font-medium text-right">
-    <div className="flex items-center justify-end">
-      <span
-        className="text-2xl font-bold text-foreground"
-        title={`${c.nombre} — ${c.grado ?? ""}`}
-      >
-        {/* acrónimo + nivel sin espacio */}
-        {c.acronimo}
-        {c.nivel && (
-          <span className="text-2xl font-bold text-foreground">{c.nivel}</span>
-        )}
-      </span>
-    </div>
-  </th>
-))}
+              <th key={c.id} className="border-b px-2 py-3 font-medium text-right">
+                <div className="flex items-center justify-end">
+                  <span
+                    className="text-2xl font-bold text-foreground"
+                    title={`${c.nombre} — ${c.grado ?? ""}`}
+                  >
+                    {/* acrónimo + nivel (si existen) */}
+                    {c.acronimo ?? ""}
+                    {c.nivel ? <span className="text-2xl font-bold text-foreground">{c.nivel}</span> : null}
+                  </span>
+                </div>
+              </th>
+            ))}
           </tr>
         </thead>
 
@@ -114,12 +108,10 @@ export function RAyCEConCursosTable({
             }
 
             return (
-              <React.Fragment key={ra.id ?? ra.codigo}>
+              <React.Fragment key={ra.id ?? String(ra.codigo)}>
                 {/* Fila RA con pills por curso */}
                 <tr className="bg-muted/30">
-                  <td className="px-4 py-3 font-bold whitespace-nowrap">
-                    RA {ra.codigo}
-                  </td>
+                  <td className="px-4 py-3 font-bold whitespace-nowrap">RA {ra.codigo}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {ra.descripcion || ra.titulo || "Sin descripción"}
                   </td>
@@ -131,24 +123,15 @@ export function RAyCEConCursosTable({
                 </tr>
 
                 {/* Filas CE del RA */}
-                {Array.isArray(ra.criterios_evaluacion) &&
-                ra.criterios_evaluacion.length > 0 ? (
+                {Array.isArray(ra.criterios_evaluacion) && ra.criterios_evaluacion.length > 0 ? (
                   ra.criterios_evaluacion.map((ce) => (
-                    <tr
-                      key={ce.id ?? ce.codigo}
-                      className="border-b border-border/50"
-                    >
-                      <td className="px-4 py-3 font-mono align-top">
-                        {ce.codigo}
-                      </td>
+                    <tr key={ce.id ?? ce.codigo} className="border-b border-border/50">
+                      <td className="px-4 py-3 font-mono align-top">{ce.codigo}</td>
                       <td className="px-4 py-3 align-top">{ce.descripcion}</td>
                       {cursos.map((c) => {
                         const state = ceStates[ce.id]?.[c.id] ?? "pending";
                         return (
-                          <td
-                            key={c.id}
-                            className="px-2 py-2 align-top text-right"
-                          >
+                          <td key={c.id} className="px-2 py-2 align-top text-right">
                             <Pill state={state} />
                           </td>
                         );
@@ -157,10 +140,7 @@ export function RAyCEConCursosTable({
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={2 + cursos.length}
-                      className="px-4 py-3 italic text-muted-foreground"
-                    >
+                    <td colSpan={2 + cursos.length} className="px-4 py-3 italic text-muted-foreground">
                       Sin criterios definidos
                     </td>
                   </tr>

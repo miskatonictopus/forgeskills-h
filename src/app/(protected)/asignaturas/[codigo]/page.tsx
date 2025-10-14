@@ -1,55 +1,80 @@
+// app/(protected)/asignaturas/[codigo]/page.tsx
 import { AsignaturaNameHydrator } from "@/components/asignaturas/AsignaturaNameHydrator";
 import { AsociarCursoButtonWrapper } from "@/components/asignaturas/AsociarCursoButtonWrapper";
 import { RAyCEConCursosTable } from "@/components/asignaturas/RAyCEConCursosTable";
 import { getCursosRelacionados } from "@/data/cursos_relacionados.server";
 import { getAsignaturaByCodigoServer } from "@/data/asignaturas.server";
 import { getRAyCEByAsignaturaServer } from "@/data/ra_ce.server";
-import * as React from "react";
+import {
+  type RAConCE,
+  type CursoResumen,
+  type AsignaturaSSR,
+} from "@/types/asignaturas";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const runtime = "nodejs";
 
-type Props = { params: { codigo: string } };
+type Params = { codigo: string };
 
-export default async function Page({ params }: Props) {
-  const { codigo } = params;
+// Forma compatible con Next 15 (params puede venir como Promise)
+export default async function Page({ params }: { params: Promise<Params> }) {
+  const { codigo } = await params;
 
-  // --- Carga asignatura ---
-  let asg: Awaited<ReturnType<typeof getAsignaturaByCodigoServer>> | null = null;
-  try {
-    asg = await getAsignaturaByCodigoServer(codigo);
-  } catch {}
+  // 1) Asignatura
+  const asg: AsignaturaSSR | null = await getAsignaturaByCodigoServer(codigo);
 
-  // --- Carga RA/CE ---
-  let raList: Awaited<ReturnType<typeof getRAyCEByAsignaturaServer>> = [];
+  // 2) RA/CE + Cursos (adaptamos el shape para la tabla)
+  let raList: RAConCE[] = [];
+  let cursosForTable: {
+    id: string;
+    acronimo: string;
+    nombre: string;
+    nivel?: string | number | null;
+    grado?: string | null;
+  }[] = [];
+
   if (asg?.asignatura_id) {
-    try {
-      raList = await getRAyCEByAsignaturaServer(asg.asignatura_id);
-    } catch {}
+    raList = await getRAyCEByAsignaturaServer(asg.asignatura_id);
+    const cursosRaw: CursoResumen[] = await getCursosRelacionados(asg.asignatura_id);
+  
+    // 👇 Adaptamos el tipo exactamente al que usa RAyCEConCursosTable
+    cursosForTable = (cursosRaw ?? []).map((c) => ({
+      id: c.id,
+      acronimo: String(c.acronimo ?? "").trim(),
+      nombre: c.nombre,
+      nivel: c.nivel !== undefined && c.nivel !== null ? String(c.nivel) : null, // 💥 tipado limpio
+      grado: c.grado ?? null,
+    })) satisfies {
+      id: string;
+      acronimo: string;
+      nombre: string;
+      nivel?: string | number | null;
+      grado?: string | null;
+    }[];
   }
 
-  // --- Carga cursos relacionados (columnas) ---
-  const cursos = asg?.asignatura_id
-    ? await getCursosRelacionados(asg.asignatura_id)
-    : [];
-
-  // --- Métricas header ---
-  const rawDescripcion = (asg as any)?.descripcion;
-  let descripcion: any = null;
+  // 3) Descripción / duración
+  const rawDescripcion = asg?.descripcion;
+  let descripcion: unknown = undefined;
   if (rawDescripcion) {
-    try {
-      descripcion =
-        typeof rawDescripcion === "string"
-          ? JSON.parse(rawDescripcion)
-          : rawDescripcion;
-    } catch {}
+    if (typeof rawDescripcion === "string") {
+      try {
+        descripcion = JSON.parse(rawDescripcion);
+      } catch {
+        descripcion = rawDescripcion;
+      }
+    } else {
+      descripcion = rawDescripcion;
+    }
   }
 
+  const d = descripcion as Record<string, unknown> | undefined;
   const duracionRaw =
-    descripcion?.duracion ??
-    (asg as any)?.duracion ??
-    (asg as any)?.horas ??
-    (asg as any)?.horas_totales ??
+    (d?.duracion as string | number | undefined) ??
+    (asg?.duracion as string | number | null) ??
+    (asg?.horas as number | null) ??
+    (asg?.horas_totales as number | null) ??
     null;
 
   const duracion =
@@ -59,25 +84,23 @@ export default async function Page({ params }: Props) {
       ? duracionRaw
       : null;
 
-  const numRA = Array.isArray(raList) ? raList.length : 0;
-  const numCE = Array.isArray(raList)
-    ? raList.reduce(
-        (acc: number, ra: any) =>
-          acc +
-          (Array.isArray(ra?.criterios_evaluacion)
-            ? ra.criterios_evaluacion.length
-            : 0),
-        0
-      )
-    : 0;
+  // 4) Métricas
+  const numRA = raList.length;
+  const numCE = raList.reduce(
+    (acc, ra) => acc + (ra.criterios_evaluacion?.length ?? 0),
+    0
+  );
 
+  // 5) UI
   return (
     <main className="p-4">
       {/* cabecera */}
       <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold text-foreground">
         <span>{codigo}</span>
         {asg?.nombre ? (
-          <span className="text-3xl font-bold text-foreground">{asg.nombre}</span>
+          <span className="text-3xl font-bold text-foreground">
+            {asg.nombre}
+          </span>
         ) : (
           <AsignaturaNameHydrator codigo={codigo} />
         )}
@@ -88,7 +111,9 @@ export default async function Page({ params }: Props) {
         {duracion && (
           <span className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1">
             <span className="text-xs text-foreground">Duración</span>
-            <span className="text-2xl font-bold text-foreground">{duracion}</span>
+            <span className="text-2xl font-bold text-foreground">
+              {duracion}
+            </span>
           </span>
         )}
         <span className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1">
@@ -119,7 +144,7 @@ export default async function Page({ params }: Props) {
                 No se encontraron RA ni CE para esta asignatura.
               </p>
             ) : (
-              <RAyCEConCursosTable raList={raList as any} cursos={cursos as any} />
+              <RAyCEConCursosTable raList={raList} cursos={cursosForTable} />
             )}
           </div>
         </section>
