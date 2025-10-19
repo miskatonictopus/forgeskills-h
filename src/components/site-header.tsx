@@ -26,7 +26,7 @@ export function SiteHeader({ className }: { className?: string }) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-white/10 bg-black/60 backdrop-blur supports-[backdrop-filter]:bg-black/50 pt-2 pb-2",
+        "sticky top-0 z-50 w-full border-b border-border bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-2 pb-2 transition-colors",
         className
       )}
     >
@@ -34,26 +34,34 @@ export function SiteHeader({ className }: { className?: string }) {
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-2">
           <Image
+            src="/img/forgeskills-logo-light.png"
+            alt="ForgeSkills"
+            width={140}
+            height={40}
+            className="h-8 w-auto object-contain dark:hidden"
+            priority
+          />
+          <Image
             src="/img/forgeskills-logo-dark.png"
             alt="ForgeSkills"
             width={140}
             height={40}
-            className="h-8 w-auto"
+            className="h-8 w-auto object-contain hidden dark:block"
             priority
           />
         </Link>
 
         {/* MENÚ DESKTOP: demo de shadcn tal cual */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-6 md:flex ml-6">
           <NavigationMenuDemo />
           <Separator orientation="vertical" className="mx-2 h-5 bg-white/10" />
 
           {/* BOTONES */}
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="text-zinc-200 text-xs">
+            <Button asChild variant="outline">
               <Link href="/login">Iniciar sesión</Link>
             </Button>
-            <Button asChild className="bg-white text-black hover:bg-white/90 text-xs">
+            <Button asChild variant="default">
               <Link href="/register">Registrarse</Link>
             </Button>
           </div>
@@ -107,12 +115,12 @@ export function SiteHeader({ className }: { className?: string }) {
               {/* Botones auth */}
               <div className="flex flex-col gap-2">
                 <SheetClose asChild>
-                  <Button asChild variant="ghost" className="justify-start">
+                  <Button asChild variant="default" className="justify-start">
                     <Link href="/login">Iniciar sesión</Link>
                   </Button>
                 </SheetClose>
                 <SheetClose asChild>
-                  <Button asChild className="justify-start bg-white text-black hover:bg-white/90">
+                  <Button asChild className="justify-start" variant={"destructive"}>
                     <Link href="/register">Registrarse</Link>
                   </Button>
                 </SheetClose>
