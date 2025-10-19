@@ -35,8 +35,6 @@ export default function LandingPage() {
           y amplía tu capacidad para centrarte en lo que importa:
           <span className="italic font-bold"> tus alumnos</span>.
         </p>
-
-        
       </section>
 
       <footer className="py-6 text-center text-xs text-gray-500">
