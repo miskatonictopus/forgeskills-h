@@ -51,10 +51,10 @@ const Features06Page = () => {
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-(--breakpoint-lg) w-full py-10 px-6">
         <h2 className="font-claude text-4xl md:text-[2.75rem] md:leading-[1.2] font-semibold tracking-[-0.03em] sm:max-w-xl text-pretty sm:mx-auto sm:text-center">
-          Strengthen Your Strategy
+          Fortalece tus habilidades
         </h2>
         <p className="mt-2 text-muted-foreground text-lg sm:text-xl sm:text-center">
-          Enhance your strategy with intelligent tools designed for success.
+          Mejora tus cualidades con herramientas inteligentes diseñadas para el éxito.
         </p>
         <div className="mt-8 md:mt-16 w-full mx-auto space-y-20">
           {features.map((feature) => (

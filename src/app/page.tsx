@@ -42,8 +42,7 @@ export default function LandingPage() {
         </div>
 
         <p className="font-claude mb-10 max-w-3xl text-4xl leading-tight text-foreground">
-  Asistente docente híbrido que aprende tu forma de enseñar, automatiza la rutina
-  y amplía tu capacidad para centrarte en lo que importa:
+  HelpDesk docente híbrido que aprende tu forma de enseñar, automatiza la rutina y amplía tu capacidad para centrarte en lo que importa:
   <span className="italic font-bold text-foreground"> tus alumnos</span>.
 </p>
       </section>
