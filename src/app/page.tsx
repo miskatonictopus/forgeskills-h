@@ -6,6 +6,7 @@ import Image from "next/image";
 import { SiteHeader } from "@/components/site-header";
 import Timeline from "@/components/timeline-06"
 import Features06Page from "@/components/features-06"
+import Footer from "@/components/Footer";
 
 
 export default function LandingPage() {
@@ -55,9 +56,7 @@ export default function LandingPage() {
         <Features06Page />
       </section>
 
-      <footer className="py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} ForgeSkills — Todos los derechos reservados.
-      </footer>
+     <Footer />
 
       {/* Fondo radial sutil que cambia con el tema */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,theme(colors.muted.DEFAULT)_0%,transparent_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
