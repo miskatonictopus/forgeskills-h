@@ -5,7 +5,6 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
@@ -21,10 +20,6 @@ export function SignupForm({
             Si eres docente de <b>IFP (Barcelona o Madrid)</b> puedes tener una versión completa gratis durante un año
           </p>
         </div>
-        <Field>
-          <FieldLabel htmlFor="name">Nombre</FieldLabel>
-          <Input id="name" type="text" placeholder="John Doe" required />
-        </Field>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input id="email" type="email" placeholder="m@example.com" required />
