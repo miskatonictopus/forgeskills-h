@@ -1,40 +1,45 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { GalleryVerticalEnd } from "lucide-react"
+import Image from "next/image";
+import { SignupForm } from "@/components/signup-form"
 
-export default function RegisterPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); const [msg, setMsg] = useState<string|null>(null);
-  const [err, setErr] = useState<string|null>(null);
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setErr(null); setMsg(null); setLoading(true);
-    const sb = supabaseBrowser();
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) { setErr(error.message); setLoading(false); return; }
-    if (data.user) { router.push("/dashboard"); router.refresh(); return; }
-    setMsg("Revisa tu email para confirmar la cuenta."); setLoading(false);
-  };
-
+export default function SignupPage() {
   return (
-    <main className="min-h-screen grid place-items-center p-6">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 border rounded-lg p-6">
-        <h1 className="text-xl font-semibold">Registro</h1>
-        <div><label className="block text-sm">Email</label>
-          <input className="w-full border rounded px-3 py-2" type="email" value={email}
-                 onChange={e=>setEmail(e.target.value)} required/></div>
-        <div><label className="block text-sm">Contraseña</label>
-          <input className="w-full border rounded px-3 py-2" type="password" value={password}
-                 onChange={e=>setPassword(e.target.value)} required/></div>
-        {err && <p className="text-sm text-red-600">{err}</p>}
-        {msg && <p className="text-sm text-green-600">{msg}</p>}
-        <button className="w-full rounded bg-black text-white py-2" disabled={loading}>
-          {loading ? "Creando…" : "Crear cuenta"}
-        </button>
-        <p className="text-sm">¿Ya tienes cuenta? <a className="underline" href="/login">Inicia sesión</a></p>
-      </form>
-    </main>
-  );
+    <div className="grid min-h-svh lg:grid-cols-2">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex justify-center gap-2 md:justify-start">
+          <a href="#" className="flex items-center gap-2 font-medium">
+            <div className="relative  h-10 w-40">
+                      {/* Cambia el logo según el tema */}
+                      <Image
+                        src="/img/forgeskills-logo-light.png"
+                        alt="ForgeSkills Logo"
+                        fill
+                        className="object-contain dark:hidden"
+                        priority
+                      />
+                      <Image
+                        src="/img/forgeskills-logo-dark.png"
+                        alt="ForgeSkills Logo"
+                        fill
+                        className="object-contain hidden dark:block"
+                        priority
+                      />
+                    </div>
+          </a>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs">
+            <SignupForm />
+          </div>
+        </div>
+      </div>
+      <div className="bg-muted relative hidden lg:block">
+        <img
+          src="/img/register-background.jpg"
+          alt="Image"
+          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.8]"
+        />
+      </div>
+    </div>
+  )
 }
