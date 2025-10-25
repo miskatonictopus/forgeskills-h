@@ -4,107 +4,125 @@ import { SiteHeader } from "@/components/site-header";
 import Footer from "@/components/Footer";
 
 const introduccion = () => {
-    return (
+  return (
+    <main className="flex min-h-screen flex-col bg-background text-foreground relative overflow-hidden transition-colors">
+      <SiteHeader />
+      <section className="pb-32">
+        <div className="mx-auto max-w-7xl px-6">
+          {/* Full Width Hero */}
+          <div className="bg-background flex items-center justify-center min-h-[40vh]">
+            <div className="container text-center">
+              <h1 className="text-4xl font-claude tracking-tighter md:text-5xl lg:text-6xl">
+                Donde la inteligencia se une a la enseñanza.
+              </h1>
+            </div>
+          </div>
 
-        <main className="flex min-h-screen flex-col bg-background text-foreground relative overflow-hidden transition-colors">
-            <SiteHeader />
-
-            <section className="pb-32">
-                {/* Full Width Hero */}
-                <div className="bg-background flex items-center justify-center min-h-[40vh]">
-                    <div className="container text-center">
-                        <h1 className="text-4xl font-claude tracking-tighter md:text-5xl lg:text-6xl">
-                            Donde la inteligencia se une a la enseñanza.
-                        </h1>
-                    </div>
-                </div>
-
-                {/* Intro Section */}
-                <div className="py-16">
-                    <div className="container">
-                        <div className="mx-auto max-w-3xl space-y-8 text-left">
-                            <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-                                Diseñado para docentes que buscan precisión, claridad y tiempo.
-                            </h2>
-                            <p className="text-muted-foreground text-xl leading-relaxed tracking-tight">
-                                ForgeSkills automatiza la planificación, el seguimiento y la evaluación por criterios (RA/CE) con un motor inteligente capaz de analizar, <span className="font-bold">generar y conectar información educativa en segundos</span>, detectando de forma temprana estudiantes en riesgo, creando actividades personalizadas por aula o alumno, y ofreciendo insights accionables para decidir mejor y más rápido.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="py-16">
-                    <div className="container">
-                        <div className="prose prose-sm dark:prose-invert mx-auto max-w-3xl text-xl">
-                            <h2 className="text-3xl font-extrabold tracking-tight mb-4">Cada decisión está respaldada por datos reales.</h2>
-                            <p className="leading-relaxed text-muted-foreground">
-                                ForgeSkills transforma la información del aula —notas, criterios de evaluación, participación y progreso— en conocimiento accionable.<br/>
-                                El sistema identifica patrones, tendencias y desviaciones en tiempo real, permitiendo al docente intervenir con precisión donde más se necesita.<br/>
-                                No existe la intuición sin evidencia: <b>hay inteligencia basada en datos educativos reales</b>.
-                            </p>
-
-                            <p>
-                                Through comprehensive user research and testing, we validate
-                                design decisions with real data. Our iterative design process
-                                ensures that every element serves a purpose and contributes to
-                                your business goals while providing an exceptional user
-                                experience.
-                            </p>
-
-                            <p>
-                                We specialize in creating design systems that scale with your
-                                business, ensuring consistency across all touchpoints while
-                                maintaining flexibility for future growth and evolution.
-                            </p>
-
-                            <p>
-                                Our collaborative approach involves stakeholders throughout the
-                                design process, from initial wireframes to final prototypes. This
-                                ensures alignment between business objectives and user needs,
-                                resulting in products that succeed in the market.
-                            </p>
-
-                            <p>
-                                Every design decision is backed by research and testing, creating
-                                solutions that are not just visually appealing but strategically
-                                sound and user-validated.
-                            </p>
-
-                            <h2>Our UX/UI Design Services</h2>
-                            <ul>
-                                <li>User research and persona development</li>
-                                <li>Information architecture and user journey mapping</li>
-                                <li>Wireframing and interactive prototyping</li>
-                                <li>Visual design and brand integration</li>
-                                <li>Usability testing and design validation</li>
-                                <li>Design system creation and documentation</li>
-                            </ul>
-
-                            <h2>Strategic Design for Business Success</h2>
-                            <p>
-                                Our design philosophy centers on creating interfaces that bridge
-                                the gap between user needs and business objectives. We understand
-                                that great UX/UI design is not just about aesthetics—it's about
-                                creating meaningful interactions that drive results.
-                            </p>
-
-                            <p>
-                                From initial concept to final implementation, we ensure that every
-                                design element contributes to a cohesive user experience that
-                                reflects your brand values and supports your business goals. Our
-                                designs are optimized for performance, accessibility, and
-                                scalability across all devices and platforms.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <Footer />
-        </main>
-    );
+          {/* Intro Section */}
+          <div className="py-16">
+            <div className="container">
+              <div className="mx-auto max-w-3xl space-y-8 text-left">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Transforma la forma en la que enseñas
+                </h2>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Forgeskills automatiza la planificación, el seguimiento y la
+                  evaluación por criterios (RA/CE) con un motor inteligente
+                  capaz de analizar,{" "}
+                  <span className="font-bold">
+                    generar y conectar información educativa en segundos
+                  </span>
+                  , detectando de forma temprana estudiantes en riesgo, creando
+                  actividades personalizadas por aula o alumno, y ofreciendo
+                  insights accionables para decidir mejor y más rápido.
+                </p>
+              </div>
+            </div>
+            <div className="container mt-20">
+              <div className="mx-auto max-w-3xl space-y-8 text-left">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Automatiza lo que te quita tiempo. Potencia lo que te hace
+                  único
+                </h2>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Forgeskills entiende que la enseñanza no debería estar
+                  dominada por tareas repetitivas. Por eso automatiza la
+                  planificación, la evaluación y el seguimiento, conectando
+                  criterios, actividades y resultados de aprendizaje en
+                  segundos.
+                </p>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Mientras nuestros LLM especialmente desarrollados organizan
+                  tus datos, tú recuperas tiempo para lo que de verdad importa:
+                  <span className="font-bold">
+                    inspirar, acompañar y formar.
+                  </span>
+                </p>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Cada algoritmo trabaja para que tu talento pedagógico brille.
+                  Cada decisión está guiada por información precisa, no por
+                  suposiciones. Automatiza lo que te quita tiempo. Potencia lo
+                  que te hace único:
+                  <span className="font-bold"> tu forma de enseñar.</span>
+                </p>
+              </div>
+            </div>
+            <div className="container mt-20">
+              <div className="mx-auto max-w-3xl space-y-8 text-left">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Planifica, evalúa y mejora cada aprendizaje
+                </h2>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Planificar no debería ser una carga, sino una oportunidad para
+                  diseñar experiencias de aprendizaje más efectivas.
+                </p>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Forgeskills te acompaña en todo el proceso: desde la creación
+                  de tu programación didáctica hasta la evaluación individual
+                  por criterios (RA/CE). La plataforma analiza automáticamente
+                  las relaciones entre resultados, actividades y evidencias,
+                  ofreciéndote una visión completa del progreso de tus alumnos.
+                  Cada nota, cada observación y cada tarea se transforman en
+                  información útil para mejorar la enseñanza día a día.
+                </p>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Detecta puntos fuertes, identifica áreas de mejora y ajusta
+                  tus estrategias con precisión. Con Forgeskills, planificar
+                  deja de ser un trámite para convertirse en una herramienta de
+                  crecimiento docente y aprendizaje real.
+                </p>
+              </div>
+            </div>
+            <div className="container mt-20">
+              <div className="mx-auto max-w-3xl space-y-8 text-left">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Menos horas de gestión. Más tiempo para inspirar
+                </h2>
+                <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Cada minuto que dedicas a cuadrar horarios, registrar notas o
+                  completar informes es tiempo que pierdes para inspirar, guiar
+                  y acompañar a tus alumnos.</p>
+                  <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Forgeskills automatiza las tareas
+                  administrativas y pedagógicas más repetitivas, para que puedas
+                  concentrarte en lo que realmente importa: enseñar con
+                  propósito. El sistema organiza tus cursos, conecta los
+                  resultados de aprendizaje (RA) con los criterios de evaluación
+                  (CE) y genera informes automáticos que antes llevaban horas.</p>
+                  <p className="text-foreground font-claude text-xl leading-relaxed tracking-tight text-justify">
+                  Todo sincronizado, visual y accesible desde un único lugar.
+                  Porque la educación no necesita más papeleo, necesita más
+                  espacio para la creatividad, la empatía y la innovación.
+                  Forgeskills no reemplaza tu labor docente — <span className="font-bold">la amplifica.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </main>
+  );
 };
 
-export default introduccion; // 👈 default export obligatorio en app/introduccion/page.tsx
-
-
+export default introduccion;

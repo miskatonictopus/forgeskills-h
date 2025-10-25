@@ -92,8 +92,9 @@ export function NavigationMenuDemo() {
   </Link>
 </NavigationMenuLink>
               </li>
-              <ListItem href="/introduccion" title="Introducción">
-                Re-usable components built using Radix UI and Tailwind CSS.
+              <ListItem href="/introduccion"
+  title="Introducción">
+              Donde la inteligencia se une a la enseñanza.
               </ListItem>
               <ListItem href="/docs/installation" title="Installation">
                 How to install dependencies and structure your app.
