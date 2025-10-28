@@ -24,8 +24,8 @@ import {
 
 const components: { title: string; href: string; description: string }[] = [
   {
-    title: "Alert Dialog",
-    href: "/docs/primitives/alert-dialog",
+    title: "Detección Temprana",
+    href: "/deteccion-temprana",
     description:
       "A modal dialog that interrupts the user with important content and expects a response.",
   },
@@ -107,7 +107,7 @@ export function NavigationMenuDemo() {
         </NavigationMenuItem>
 
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Components</NavigationMenuTrigger>
+          <NavigationMenuTrigger>Skills</NavigationMenuTrigger>
           <NavigationMenuContent className="pt-3 pb-4 pr-4 pl-4">
             <ul className="grid w-[400px] gap-2 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
               {components.map((component) => (

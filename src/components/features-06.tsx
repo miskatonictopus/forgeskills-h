@@ -9,7 +9,8 @@ const features = [
     title: "Eliminamos las alucinaciones actuales de la IA",
     details:
       "Nuestros modelos híbridos combinan razonamiento simbólico y aprendizaje profundo para eliminar las alucinaciones. Cada decisión de la IA se canaliza por un túnel de verificación que asegura precisión, trazabilidad y coherencia total.",
-    image: "/img/hybrid-tunnel.jpg", // 📸
+    image: "/img/hybrid-tunnel.jpg",
+    tutorialLink: "#", 
   },
   {
     category: "Potencia de Procesamiento",
@@ -40,7 +41,7 @@ const features = [
     title: "Detección Temprana y Refuerzo Adaptativo",
     details:
       "Mediante el análisis continuo del rendimiento, ForgeSkills identifica patrones de bajo rendimiento o riesgo académico. Nuestro sistema propone actividades específicas, ajustadas en dificultad y objetivos, para potenciar las áreas de mejora de cada alumno o grupo.",
-    tutorialLink: "#",
+    tutorialLink: "/deteccion-temprana",
     image: "/img/deteccion-temprana.jpg",
   },
 ];
@@ -80,11 +81,11 @@ const Features06Page = () => {
                   {feature.title}
                 </h4>
                 <p className="text-muted-foreground">{feature.details}</p>
-                {/* <Button asChild size="lg" className="mt-6 rounded-full gap-3">
+                <Button asChild size="lg" className="mt-6 rounded-full gap-3">
                   <Link href={feature.tutorialLink}>
-                    Learn More <ArrowRight />
+                    Más información <ArrowRight />
                   </Link>
-                </Button> */}
+                </Button>
               </div>
             </div>
           ))}
