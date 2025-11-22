@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
@@ -13,8 +14,9 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import { NavigationMenuDemo } from "@/components/navigation-menu-demo"; // ⬅️ demo oficial
+import { NavigationMenuDemo } from "@/components/navigation-menu-demo";
 import { cn } from "@/lib/utils";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 const mobileLinks = [
   { href: "/docs", label: "Docs" },
@@ -23,6 +25,27 @@ const mobileLinks = [
 ];
 
 export function SiteHeader({ className }: { className?: string }) {
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(
+    null
+  );
+
+  React.useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const supabase = supabaseBrowser();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session);
+      } catch (e) {
+        console.error("[SiteHeader] error checking session", e);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkSession();
+  }, []);
+
   return (
     <header
       className={cn(
@@ -51,19 +74,29 @@ export function SiteHeader({ className }: { className?: string }) {
           />
         </Link>
 
-        {/* MENÚ DESKTOP: demo de shadcn tal cual */}
+        {/* MENÚ DESKTOP */}
         <nav className="hidden items-center gap-6 md:flex ml-6">
           <NavigationMenuDemo />
           <Separator orientation="vertical" className="mx-2 h-5 bg-white/10" />
 
           {/* BOTONES */}
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/login">Iniciar sesión</Link>
-            </Button>
-            <Button asChild variant="default">
-              <Link href="/register">Registrarse</Link>
-            </Button>
+            {isAuthenticated ? (
+              // 🟢 Usuario logueado → Panel de control
+              <Button asChild variant="outline">
+                <Link href="/app">Panel de control</Link>
+              </Button>
+            ) : (
+              // 🔴 No logueado → Iniciar sesión + Registrarse
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/login">Iniciar sesión</Link>
+                </Button>
+                <Button asChild variant="default">
+                  <Link href="/register">Registrarse</Link>
+                </Button>
+              </>
+            )}
           </div>
         </nav>
 
@@ -112,18 +145,40 @@ export function SiteHeader({ className }: { className?: string }) {
 
               <Separator className="my-3 bg-white/10" />
 
-              {/* Botones auth */}
+              {/* Botones auth móvil */}
               <div className="flex flex-col gap-2">
-                <SheetClose asChild>
-                  <Button asChild variant="default" className="justify-start">
-                    <Link href="/login">Iniciar sesión</Link>
-                  </Button>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Button asChild className="justify-start" variant={"destructive"}>
-                    <Link href="/register">Registrarse</Link>
-                  </Button>
-                </SheetClose>
+                {isAuthenticated ? (
+                  <SheetClose asChild>
+                    <Button
+                      asChild
+                      variant="default"
+                      className="justify-start"
+                    >
+                      <Link href="/app">Panel de control</Link>
+                    </Button>
+                  </SheetClose>
+                ) : (
+                  <>
+                    <SheetClose asChild>
+                      <Button
+                        asChild
+                        variant="default"
+                        className="justify-start"
+                      >
+                        <Link href="/login">Iniciar sesión</Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button
+                        asChild
+                        className="justify-start"
+                        variant="destructive"
+                      >
+                        <Link href="/register">Registrarse</Link>
+                      </Button>
+                    </SheetClose>
+                  </>
+                )}
               </div>
             </div>
           </SheetContent>
