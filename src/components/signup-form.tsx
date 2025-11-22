@@ -31,47 +31,56 @@ export function SignupForm({
     e.preventDefault();
     setError(null);
     setSuccess(null);
-
+  
     if (!email || !password || !passwordConfirm) {
       setError("Rellena todos los campos.");
       return;
     }
-
+  
     if (password !== passwordConfirm) {
       setError("Las contraseñas no coinciden.");
       return;
     }
-
+  
     if (password.length < 8) {
       setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const supabase = supabaseBrowser();
-
+  
+      // 👇 ESTE redireccionará siempre a /auth/callback
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : "https://forgeskills.io/auth/callback";
+  
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectTo, // 👈 AÑADIDO
+        },
       });
-
+  
       if (error) {
         console.error("[SIGNUP] error:", error);
         setError(error.message || "No se pudo crear la cuenta.");
         return;
       }
-
+  
       console.log("[SIGNUP] data:", data);
       setSuccess(
-        "Cuenta creada correctamente. Revisa tu correo si se requiere confirmación."
+        "Cuenta creada correctamente. Revisa tu correo para confirmar tu email."
       );
-
-      // Redirigimos al login tras un pequeño delay
+  
+      // No redirigimos inmediatamente — dejamos que el usuario confirme su email
       setTimeout(() => {
         router.push("/login");
-      }, 1500);
+      }, 2000);
     } catch (err: any) {
       console.error("[SIGNUP] unexpected error:", err);
       setError(err?.message ?? "Error inesperado al crear la cuenta.");
