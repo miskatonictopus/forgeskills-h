@@ -1,14 +1,13 @@
-import { createBrowserClient } from "@supabase/ssr";
+// src/lib/supabaseBrowser.ts
+import { createClient } from "@supabase/supabase-js";
 
-export const supabaseBrowser = () =>
-  createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        persistSession: false,     // no guarda ni busca sesión
-        autoRefreshToken: false,   // no refresca tokens
-        detectSessionInUrl: false, // ignora callbacks OAuth
-      },
-    }
-  );
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export function supabaseBrowser() {
+  return createClient(url, anonKey, {
+    auth: {
+      persistSession: true,
+    },
+  });
+}

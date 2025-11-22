@@ -33,8 +33,8 @@ export function LoginForm({
         data: { session },
       } = await supabaseBrowser().auth.getSession();
       if (session) {
-        const next = searchParams.get("next") || "/dashboard";
-        router.replace(next);
+        const next = searchParams.get("next") || "/app";
+router.replace(next);
       }
     };
     check();
@@ -68,9 +68,9 @@ export function LoginForm({
         return;
       }
 
-      const next = searchParams.get("next") || "/dashboard";
-      router.replace(next);
-      router.refresh();
+      const next = searchParams.get("next") || "/app";
+router.replace(next);
+router.refresh();
     } catch {
       setError("Error de red. Inténtalo de nuevo.");
     } finally {
