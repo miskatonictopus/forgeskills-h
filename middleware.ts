@@ -11,12 +11,16 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const isProtectedRoute = req.nextUrl.pathname.startsWith("/app");
+  const { pathname } = req.nextUrl;
 
-  if (isProtectedRoute && !session) {
-    const redirectUrl = new URL("/login", req.url);
-    redirectUrl.searchParams.set("next", req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  // Solo protegemos /app
+  if (pathname.startsWith("/app")) {
+    if (!session) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
+    }
   }
 
   return res;
