@@ -44,7 +44,7 @@ export function SignupForm({
         </Field>
         <Field>
           <FieldDescription className="px-6 text-center">
-            Ya tienes una cuenta? <a href="#">Entrar</a>
+            Ya tienes una cuenta? <a href="/login">Entrar</a>
           </FieldDescription>
         </Field>
       </FieldGroup>
