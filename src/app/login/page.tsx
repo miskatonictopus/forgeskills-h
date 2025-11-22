@@ -1,19 +1,30 @@
-"use client";
-
+// src/app/login/page.tsx
 import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+
 import { LoginForm } from "@/components/login-form";
-import { SiteHeader } from "@/components/site-header"; // ⬅️ añade esto
+import { SiteHeader } from "@/components/site-header";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const supabase = createServerComponentClient({ cookies });
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Si ya está logueado, que no vea el login → directo al panel
+  if (session) {
+    redirect("/app");
+  }
+
   return (
     <>
-      {/* Header arriba */}
       <SiteHeader />
-
-      {/* Centro el login en toda la pantalla */}
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center">
         <Suspense fallback={null}>
           <LoginForm />
         </Suspense>

@@ -27,18 +27,9 @@ export function LoginForm({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    const check = async () => {
-      const {
-        data: { session },
-      } = await supabaseBrowser().auth.getSession();
-      if (session) {
-        const next = searchParams.get("next") || "/app";
+  const next = searchParams.get("next") || "/app"; // mejor /app ahora
 router.replace(next);
-      }
-    };
-    check();
-  }, [router, searchParams]);
+router.refresh();
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
